@@ -1,10 +1,23 @@
+import { useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
 import { Ticket, TicketStatus, statusConfig } from "@/types/support";
 import { TicketCard } from "./TicketCard";
-import { cn } from "@/lib/utils";
+import { DroppableColumn } from "./DroppableColumn";
+import { DraggableCard } from "./DraggableCard";
 
 interface KanbanBoardProps {
   tickets: Ticket[];
   onTicketClick: (ticket: Ticket) => void;
+  onTicketMove?: (ticketId: string, newStatus: TicketStatus) => void;
 }
 
 const kanbanColumns: TicketStatus[] = [
@@ -17,56 +30,87 @@ const kanbanColumns: TicketStatus[] = [
   "cerrado",
 ];
 
-export function KanbanBoard({ tickets, onTicketClick }: KanbanBoardProps) {
+export function KanbanBoard({ tickets, onTicketClick, onTicketMove }: KanbanBoardProps) {
+  const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   const getTicketsByStatus = (status: TicketStatus) => {
     return tickets.filter((t) => t.status === status);
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const ticket = tickets.find((t) => t.id === event.active.id);
+    if (ticket) {
+      setActiveTicket(ticket);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTicket(null);
+
+    if (!over) return;
+
+    const ticketId = active.id as string;
+    const newStatus = over.id as TicketStatus;
+
+    const ticket = tickets.find((t) => t.id === ticketId);
+    if (ticket && ticket.status !== newStatus && onTicketMove) {
+      onTicketMove(ticketId, newStatus);
+    }
+  };
+
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
-      {kanbanColumns.map((status) => {
-        const statusTickets = getTicketsByStatus(status);
-        const config = statusConfig[status];
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[500px]">
+        {kanbanColumns.map((status) => {
+          const statusTickets = getTicketsByStatus(status);
+          const config = statusConfig[status];
 
-        return (
-          <div
-            key={status}
-            className="flex-shrink-0 w-72 bg-muted/30 rounded-xl"
-          >
-            {/* Column Header */}
-            <div
-              className={cn(
-                "flex items-center justify-between p-3 rounded-t-xl",
-                config.bgColor
-              )}
+          return (
+            <DroppableColumn
+              key={status}
+              status={status}
+              config={config}
+              ticketCount={statusTickets.length}
             >
-              <h3 className="font-semibold text-sm text-white">
-                {config.label}
-              </h3>
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-white text-xs font-medium">
-                {statusTickets.length}
-              </span>
-            </div>
-
-            {/* Cards Container */}
-            <div className="p-3 space-y-3">
               {statusTickets.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   Sin tickets
                 </div>
               ) : (
                 statusTickets.map((ticket) => (
-                  <TicketCard
+                  <DraggableCard
                     key={ticket.id}
                     ticket={ticket}
                     onClick={onTicketClick}
                   />
                 ))
               )}
-            </div>
+            </DroppableColumn>
+          );
+        })}
+      </div>
+
+      <DragOverlay>
+        {activeTicket ? (
+          <div className="opacity-90 rotate-3 scale-105">
+            <TicketCard ticket={activeTicket} onClick={() => {}} />
           </div>
-        );
-      })}
-    </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

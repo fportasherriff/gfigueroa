@@ -49,6 +49,16 @@ export default function Support() {
     setTickets((prev) => [newTicket, ...prev]);
   };
 
+  const handleTicketMove = (ticketId: string, newStatus: TicketStatus) => {
+    setTickets((prev) =>
+      prev.map((ticket) =>
+        ticket.id === ticketId
+          ? { ...ticket, status: newStatus, updatedAt: new Date().toISOString() }
+          : ticket
+      )
+    );
+  };
+
   // Status counts
   const statusCounts = Object.keys(statusConfig).reduce((acc, status) => {
     acc[status as TicketStatus] = tickets.filter(
@@ -168,7 +178,11 @@ export default function Support() {
 
       {/* Content */}
       {viewMode === "kanban" ? (
-        <KanbanBoard tickets={filteredTickets} onTicketClick={handleTicketClick} />
+        <KanbanBoard 
+          tickets={filteredTickets} 
+          onTicketClick={handleTicketClick}
+          onTicketMove={handleTicketMove}
+        />
       ) : (
         <TicketTable tickets={filteredTickets} onTicketClick={handleTicketClick} />
       )}
