@@ -167,31 +167,102 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Helper to convert header names to snake_case column names
+    const toSnakeCase = (str: string): string => {
+      return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    };
+
     const parsedRows = dataRows.map((line: string) => {
       const values = parseCSVLine(line);
-      const row: Record<string, string> = {};
+      const row: Record<string, string | null> = {};
       
       headers.forEach((header: string, i: number) => {
-        row[header] = values[i] || '';
+        const columnName = toSnakeCase(header);
+        const value = values[i]?.trim() || null;
+        row[columnName] = value === '' ? null : value;
       });
       
       return row;
     });
 
-    const recordsProcessed = parsedRows.length;
+    console.log(`Parsed ${parsedRows.length} rows. Starting database operations for table: ${detectedType}`);
 
-    console.log(`Successfully processed ${recordsProcessed} records for ${detectedType} (${tableConfig.label})`);
+    // Step 1: Delete all existing records (snapshot replacement strategy)
+    const { error: deleteError } = await supabase
+      .from(detectedType)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows (workaround for "delete all")
+
+    if (deleteError) {
+      console.error(`Error deleting from ${detectedType}:`, deleteError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          stage: 'delete',
+          errors: [`Error al limpiar tabla ${tableConfig.label}: ${deleteError.message}`],
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log(`Deleted existing records from ${detectedType}. Inserting ${parsedRows.length} new rows...`);
+
+    // Step 2: Insert new records in batches to avoid payload limits
+    const BATCH_SIZE = 500;
+    let totalInserted = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
+      const batch = parsedRows.slice(i, i + BATCH_SIZE);
+      
+      const { error: insertError, data: insertedData } = await supabase
+        .from(detectedType)
+        .insert(batch)
+        .select();
+
+      if (insertError) {
+        console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertError);
+        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertError.message}`);
+      } else {
+        totalInserted += insertedData?.length || batch.length;
+      }
+    }
+
+    if (errors.length > 0 && totalInserted === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          stage: 'insert',
+          errors: errors,
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log(`Successfully inserted ${totalInserted} records into ${detectedType}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         stage: 'complete',
-        message: `Se procesaron ${recordsProcessed} registros de ${tableConfig.label}`,
-        recordsProcessed,
+        message: `Se reemplazaron ${totalInserted} registros en ${tableConfig.label}`,
+        recordsProcessed: totalInserted,
         fileType: detectedType,
         fileName,
         detectedLabel: tableConfig.label,
-        headers: headers
+        headers: headers,
+        warnings: errors.length > 0 ? errors : undefined
       }),
       { 
         status: 200, 
