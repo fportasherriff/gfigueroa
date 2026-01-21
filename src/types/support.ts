@@ -10,11 +10,11 @@ export type TicketStatus =
 export type TicketPriority = "baja" | "media" | "alta";
 
 export type TicketCategory = 
-  | "Datos" 
+  | "Visualización" 
   | "Mejora / Feature" 
-  | "Bug / Error" 
-  | "Consulta" 
-  | "Otro";
+  | "Bug / Métrica" 
+  | "Nueva Métrica" 
+  | "Datos";
 
 export interface Ticket {
   id: string;
@@ -82,78 +82,12 @@ export const priorityConfig: Record<TicketPriority, { label: string; color: stri
 };
 
 export const categoryConfig: Record<TicketCategory, { label: string; color: string }> = {
-  "Datos": { label: "Datos", color: "bg-blue-100 text-blue-700" },
+  "Visualización": { label: "Visualización", color: "bg-blue-100 text-blue-700" },
   "Mejora / Feature": { label: "Mejora / Feature", color: "bg-purple-100 text-purple-700" },
-  "Bug / Error": { label: "Bug / Error", color: "bg-red-100 text-red-700" },
-  "Consulta": { label: "Consulta", color: "bg-cyan-100 text-cyan-700" },
-  "Otro": { label: "Otro", color: "bg-gray-100 text-gray-700" },
+  "Bug / Métrica": { label: "Bug / Métrica", color: "bg-red-100 text-red-700" },
+  "Nueva Métrica": { label: "Nueva Métrica", color: "bg-emerald-100 text-emerald-700" },
+  "Datos": { label: "Datos", color: "bg-amber-100 text-amber-700" },
 };
 
-// Mock data
-export const mockTickets: Ticket[] = [
-  {
-    id: "1",
-    title: "Agregar nombre a vendedores en agenda",
-    description: "En el desplegable para seleccionar nombre en agenda falta el vendedor Manuel Márquez Cena.",
-    status: "abierto",
-    priority: "baja",
-    category: "Datos",
-    assignedTo: "Francisco Porta",
-    reportedBy: "Admin",
-    createdAt: "2024-01-12T10:00:00Z",
-    updatedAt: "2024-01-12T10:00:00Z",
-    comments: [],
-  },
-  {
-    id: "2",
-    title: "PRODUCCION",
-    description: "Cuando cargamos hoy el número no se actualizó correctamente.",
-    status: "abierto",
-    priority: "alta",
-    category: "Mejora / Feature",
-    assignedTo: null,
-    reportedBy: "Admin",
-    createdAt: "2024-01-15T14:30:00Z",
-    updatedAt: "2024-01-15T14:30:00Z",
-    comments: [],
-  },
-  {
-    id: "3",
-    title: "Ver pipeline por vendedor",
-    description: "Cuando pones el detalle del pipeline o ahí cuando entras al dashboard ve un ranking.",
-    status: "en_revision",
-    priority: "media",
-    category: "Mejora / Feature",
-    assignedTo: "JM",
-    reportedBy: "Admin",
-    createdAt: "2024-01-19T09:00:00Z",
-    updatedAt: "2024-01-19T09:00:00Z",
-    comments: [],
-  },
-  {
-    id: "4",
-    title: "Detalle facturado en el mes",
-    description: "Necesitamos poder ver el detalle de lo facturado por cada vendedor en el mes.",
-    status: "en_revision",
-    priority: "media",
-    category: "Mejora / Feature",
-    assignedTo: null,
-    reportedBy: "Admin",
-    createdAt: "2024-01-18T11:00:00Z",
-    updatedAt: "2024-01-18T11:00:00Z",
-    comments: [],
-  },
-  {
-    id: "5",
-    title: "Error en fecha de vencimiento",
-    description: "Se carga una fecha balance pero en la pantalla muestra otra fecha.",
-    status: "resuelto",
-    priority: "media",
-    category: "Bug / Error",
-    assignedTo: "FP",
-    reportedBy: "Admin",
-    createdAt: "2024-01-20T16:00:00Z",
-    updatedAt: "2024-01-21T10:00:00Z",
-    comments: [],
-  },
-];
+// Empty initial tickets - ready for user creation
+export const mockTickets: Ticket[] = [];

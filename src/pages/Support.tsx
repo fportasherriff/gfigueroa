@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KanbanBoard } from "@/components/support/KanbanBoard";
 import { TicketTable } from "@/components/support/TicketTable";
 import { TicketDetailModal } from "@/components/support/TicketDetailModal";
+import { NewTicketModal } from "@/components/support/NewTicketModal";
 import { HowItWorksModal } from "@/components/support/HowItWorksModal";
 import { 
   Ticket, 
@@ -24,9 +25,10 @@ import {
 type ViewMode = "kanban" | "table";
 
 export default function Support() {
-  const [tickets] = useState<Ticket[]>(mockTickets);
+  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +36,17 @@ export default function Support() {
   const handleTicketClick = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setDetailModalOpen(true);
+  };
+
+  const handleCreateTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "comments">) => {
+    const newTicket: Ticket = {
+      ...ticketData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      comments: [],
+    };
+    setTickets((prev) => [newTicket, ...prev]);
   };
 
   // Status counts
@@ -66,7 +79,7 @@ export default function Support() {
             <HelpCircle className="w-4 h-4 mr-2" />
             ¿Cómo funciona?
           </Button>
-          <Button>
+          <Button onClick={() => setNewTicketModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Ticket
           </Button>
@@ -116,9 +129,11 @@ export default function Support() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="datos">Datos</SelectItem>
+              <SelectItem value="visualizacion">Visualización</SelectItem>
               <SelectItem value="mejora">Mejora / Feature</SelectItem>
-              <SelectItem value="bug">Bug / Error</SelectItem>
+              <SelectItem value="bug">Bug / Métrica</SelectItem>
+              <SelectItem value="nueva">Nueva Métrica</SelectItem>
+              <SelectItem value="datos">Datos</SelectItem>
             </SelectContent>
           </Select>
 
@@ -163,6 +178,11 @@ export default function Support() {
         ticket={selectedTicket}
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
+      />
+      <NewTicketModal
+        open={newTicketModalOpen}
+        onOpenChange={setNewTicketModalOpen}
+        onCreateTicket={handleCreateTicket}
       />
       <HowItWorksModal open={howItWorksOpen} onOpenChange={setHowItWorksOpen} />
     </div>
