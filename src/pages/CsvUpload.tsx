@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CsvFile {
   id: string;
@@ -82,9 +83,9 @@ export default function CsvUpload() {
       )
     );
 
-    // Simulate upload progress
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+    // Simulate initial progress
+    for (let i = 0; i <= 30; i += 10) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
       setCsvFiles((prev) =>
         prev.map((f) =>
           f.id === fileId ? { ...f, progress: i } : f
@@ -92,23 +93,66 @@ export default function CsvUpload() {
       );
     }
 
-    // Simulate API call to edge function
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Read CSV file content
+      const csvContent = await file.text();
+      
+      setCsvFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId ? { ...f, progress: 50 } : f
+        )
+      );
 
-    setCsvFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId
-          ? {
-              ...f,
-              status: "success",
-              progress: 100,
-              lastUpdated: new Date().toLocaleString("es-ES"),
-            }
-          : f
-      )
-    );
+      // Call the Edge Function
+      const { data, error } = await supabase.functions.invoke('process-csv-upload', {
+        body: {
+          fileType: fileId,
+          fileName: file.name,
+          csvData: csvContent,
+        },
+      });
 
-    toast.success(`${file.name} cargado exitosamente`);
+      setCsvFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId ? { ...f, progress: 90 } : f
+        )
+      );
+
+      if (error) {
+        throw new Error(error.message || 'Error al procesar el archivo');
+      }
+
+      setCsvFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: "success",
+                progress: 100,
+                lastUpdated: new Date().toLocaleString("es-ES"),
+              }
+            : f
+        )
+      );
+
+      toast.success(`${file.name} procesado exitosamente`, {
+        description: data?.message || `Se actualizaron los datos de ${fileId}`,
+      });
+    } catch (error) {
+      console.error('Error uploading CSV:', error);
+      
+      setCsvFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? { ...f, status: "error", progress: 0 }
+            : f
+        )
+      );
+
+      toast.error(`Error al procesar ${file.name}`, {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    }
   };
 
   const handleDrop = (fileId: string, e: React.DragEvent) => {
