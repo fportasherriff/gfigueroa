@@ -280,43 +280,38 @@ export default function CsvUpload() {
         </CardContent>
       </Card>
 
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* CSV Upload Cards */}
-        <div className="xl:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {csvFiles.map((csvFile) => (
-              <CsvUploadCard
-                key={csvFile.id}
-                csvFile={csvFile}
-                dragOver={dragOver === csvFile.id}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(csvFile.id);
-                }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={(e) => handleDrop(csvFile.id, e)}
-                onFileSelect={(e) => handleFileSelect(csvFile.id, e)}
-              />
-            ))}
-          </div>
-
-          {/* Bulk Upload */}
-          <BulkUpload
-            csvFiles={csvFiles}
-            onBulkUpload={handleBulkUpload}
-            isUploading={isBulkUploading}
-            uploadProgress={bulkProgress}
+      {/* CSV Upload Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {csvFiles.map((csvFile) => (
+          <CsvUploadCard
+            key={csvFile.id}
+            csvFile={csvFile}
+            dragOver={dragOver === csvFile.id}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(csvFile.id);
+            }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={(e) => handleDrop(csvFile.id, e)}
+            onFileSelect={(e) => handleFileSelect(csvFile.id, e)}
           />
-        </div>
+        ))}
+      </div>
 
-        {/* Upload History */}
-        <div className="xl:col-span-1">
-          <UploadHistory 
-            history={uploadHistory} 
-            onClearHistory={handleClearHistory} 
-          />
-        </div>
+      {/* Bulk Upload */}
+      <BulkUpload
+        csvFiles={csvFiles}
+        onBulkUpload={handleBulkUpload}
+        isUploading={isBulkUploading}
+        uploadProgress={bulkProgress}
+      />
+
+      {/* Upload History - Below cards */}
+      <div className="mt-6">
+        <UploadHistory 
+          history={uploadHistory} 
+          onClearHistory={handleClearHistory} 
+        />
       </div>
     </div>
   );
