@@ -12,6 +12,9 @@ const kanbanColumns: TicketStatus[] = [
   "en_progreso",
   "en_revision",
   "resuelto",
+  "bloqueado",
+  "rechazado",
+  "cerrado",
 ];
 
 export function KanbanBoard({ tickets, onTicketClick }: KanbanBoardProps) {
