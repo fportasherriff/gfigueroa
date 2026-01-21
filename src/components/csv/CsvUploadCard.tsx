@@ -44,18 +44,18 @@ export function CsvUploadCard({
   return (
     <Card
       className={cn(
-        "transition-all duration-200 hover:shadow-lg",
+        "transition-all duration-200 hover:shadow-lg h-full flex flex-col",
         dragOver && "ring-2 ring-primary border-primary"
       )}
     >
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
               <FileSpreadsheet className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-base">{csvFile.name}</CardTitle>
+              <CardTitle className="text-base leading-tight">{csvFile.name}</CardTitle>
               {csvFile.lastUpdated && (
                 <CardDescription className="text-xs">
                   Última actualización: {csvFile.lastUpdated}
@@ -63,57 +63,61 @@ export function CsvUploadCard({
               )}
             </div>
           </div>
-          {getStatusIcon(csvFile.status)}
+          <div className="flex-shrink-0">
+            {getStatusIcon(csvFile.status)}
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
+      <CardContent className="flex-1 flex flex-col">
+        <p className="text-sm text-muted-foreground mb-4 min-h-[40px]">
           {csvFile.description}
         </p>
 
-        {csvFile.status === "uploading" ? (
-          <div className="space-y-2">
-            <Progress value={csvFile.progress} className="h-2" />
-            <p className="text-xs text-center text-muted-foreground">
-              Procesando... {csvFile.progress}%
-            </p>
-          </div>
-        ) : (
-          <div
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            className={cn(
-              "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer hover:border-primary hover:bg-primary/5",
-              dragOver
-                ? "border-primary bg-primary/5"
-                : "border-muted"
-            )}
-          >
-            <input
-              type="file"
-              accept=".csv"
-              onChange={onFileSelect}
-              className="hidden"
-              id={`file-${csvFile.id}`}
-            />
-            <label
-              htmlFor={`file-${csvFile.id}`}
-              className="cursor-pointer"
+        <div className="mt-auto">
+          {csvFile.status === "uploading" ? (
+            <div className="space-y-2">
+              <Progress value={csvFile.progress} className="h-2" />
+              <p className="text-xs text-center text-muted-foreground">
+                Procesando... {csvFile.progress}%
+              </p>
+            </div>
+          ) : (
+            <div
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={cn(
+                "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer hover:border-primary hover:bg-primary/5",
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-muted"
+              )}
             >
-              <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Arrastra o{" "}
-                <span className="text-primary font-medium">
-                  selecciona archivo
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Solo archivos .csv
-              </p>
-            </label>
-          </div>
-        )}
+              <input
+                type="file"
+                accept=".csv"
+                onChange={onFileSelect}
+                className="hidden"
+                id={`file-${csvFile.id}`}
+              />
+              <label
+                htmlFor={`file-${csvFile.id}`}
+                className="cursor-pointer"
+              >
+                <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Arrastra o{" "}
+                  <span className="text-primary font-medium">
+                    selecciona archivo
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Solo archivos .csv
+                </p>
+              </label>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
