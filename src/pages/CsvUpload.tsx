@@ -1,28 +1,12 @@
-import { useState } from "react";
-import { 
-  Upload, 
-  FileSpreadsheet, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock,
-  RefreshCw,
-  Info
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { useState, useCallback } from "react";
+import { Upload, Info } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-interface CsvFile {
-  id: string;
-  name: string;
-  description: string;
-  lastUpdated: string | null;
-  status: "idle" | "uploading" | "success" | "error";
-  progress: number;
-}
+import { CsvFile, UploadHistoryEntry } from "@/types/csv";
+import { CsvUploadCard } from "@/components/csv/CsvUploadCard";
+import { UploadHistory } from "@/components/csv/UploadHistory";
+import { BulkUpload } from "@/components/csv/BulkUpload";
 
 const initialCsvFiles: CsvFile[] = [
   {
@@ -70,11 +54,33 @@ const initialCsvFiles: CsvFile[] = [
 export default function CsvUpload() {
   const [csvFiles, setCsvFiles] = useState<CsvFile[]>(initialCsvFiles);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>([]);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    current: number;
+    total: number;
+    currentFile: string;
+  } | null>(null);
 
-  const handleFileUpload = async (fileId: string, file: File) => {
+  const addToHistory = useCallback((entry: Omit<UploadHistoryEntry, "id" | "timestamp">) => {
+    const newEntry: UploadHistoryEntry = {
+      ...entry,
+      id: crypto.randomUUID(),
+      timestamp: new Date(),
+    };
+    setUploadHistory((prev) => [newEntry, ...prev]);
+  }, []);
+
+  const handleFileUpload = useCallback(async (fileId: string, file: File): Promise<boolean> => {
     if (!file.name.endsWith(".csv")) {
       toast.error("Solo se permiten archivos CSV");
-      return;
+      return false;
+    }
+
+    const csvFile = csvFiles.find(f => f.id === fileId);
+    if (!csvFile) {
+      toast.error("Tipo de archivo no reconocido");
+      return false;
     }
 
     setCsvFiles((prev) =>
@@ -135,9 +141,20 @@ export default function CsvUpload() {
         )
       );
 
-      toast.success(`${file.name} procesado exitosamente`, {
-        description: data?.message || `Se actualizaron los datos de ${fileId}`,
+      // Add to history
+      addToHistory({
+        fileType: csvFile.name,
+        fileName: file.name,
+        status: "success",
+        message: data?.message || `Datos actualizados correctamente`,
+        recordsProcessed: data?.recordsProcessed,
       });
+
+      toast.success(`${file.name} procesado exitosamente`, {
+        description: data?.message || `Se actualizaron los datos de ${csvFile.name}`,
+      });
+
+      return true;
     } catch (error) {
       console.error('Error uploading CSV:', error);
       
@@ -149,11 +166,21 @@ export default function CsvUpload() {
         )
       );
 
+      // Add to history
+      addToHistory({
+        fileType: csvFile.name,
+        fileName: file.name,
+        status: "error",
+        message: error instanceof Error ? error.message : 'Error desconocido',
+      });
+
       toast.error(`Error al procesar ${file.name}`, {
         description: error instanceof Error ? error.message : 'Error desconocido',
       });
+
+      return false;
     }
-  };
+  }, [csvFiles, addToHistory]);
 
   const handleDrop = (fileId: string, e: React.DragEvent) => {
     e.preventDefault();
@@ -171,17 +198,58 @@ export default function CsvUpload() {
     }
   };
 
-  const getStatusIcon = (status: CsvFile["status"]) => {
-    switch (status) {
-      case "uploading":
-        return <RefreshCw className="w-5 h-5 text-primary animate-spin" />;
-      case "success":
-        return <CheckCircle2 className="w-5 h-5 text-success" />;
-      case "error":
-        return <AlertCircle className="w-5 h-5 text-destructive" />;
-      default:
-        return <Clock className="w-5 h-5 text-muted-foreground" />;
+  const handleBulkUpload = async (files: FileList) => {
+    setIsBulkUploading(true);
+    const fileArray = Array.from(files);
+    
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      setBulkProgress({
+        current: i + 1,
+        total: fileArray.length,
+        currentFile: file.name,
+      });
+
+      // Try to match file name to a csv type
+      const matchedType = csvFiles.find((csvFile) => {
+        const normalizedFileName = file.name.toLowerCase().replace(/[_\-\s]/g, '');
+        const normalizedTypeName = csvFile.name.toLowerCase().replace(/[_\-\s]/g, '');
+        return normalizedFileName.includes(normalizedTypeName) || 
+               normalizedTypeName.includes(normalizedFileName.replace('.csv', ''));
+      });
+
+      if (matchedType) {
+        await handleFileUpload(matchedType.id, file);
+      } else {
+        // Try the first available idle type
+        const firstIdle = csvFiles.find(f => f.status === "idle");
+        if (firstIdle) {
+          toast.warning(`"${file.name}" no coincide con ningún tipo conocido`, {
+            description: `Se asignó automáticamente a "${firstIdle.name}"`,
+          });
+          await handleFileUpload(firstIdle.id, file);
+        } else {
+          toast.error(`No se pudo asignar "${file.name}" a ningún tipo`);
+          addToHistory({
+            fileType: "Desconocido",
+            fileName: file.name,
+            status: "error",
+            message: "No se encontró un tipo de archivo disponible",
+          });
+        }
+      }
     }
+
+    setIsBulkUploading(false);
+    setBulkProgress(null);
+    toast.success("Carga múltiple completada", {
+      description: `Se procesaron ${fileArray.length} archivos`,
+    });
+  };
+
+  const handleClearHistory = () => {
+    setUploadHistory([]);
+    toast.info("Historial limpiado");
   };
 
   return (
@@ -212,107 +280,44 @@ export default function CsvUpload() {
         </CardContent>
       </Card>
 
-      {/* CSV Upload Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {csvFiles.map((csvFile) => (
-          <Card
-            key={csvFile.id}
-            className={cn(
-              "transition-all duration-200 hover:shadow-lg",
-              dragOver === csvFile.id && "ring-2 ring-primary border-primary"
-            )}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <FileSpreadsheet className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{csvFile.name}</CardTitle>
-                    {csvFile.lastUpdated && (
-                      <CardDescription className="text-xs">
-                        Última actualización: {csvFile.lastUpdated}
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
-                {getStatusIcon(csvFile.status)}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {csvFile.description}
-              </p>
-
-              {csvFile.status === "uploading" ? (
-                <div className="space-y-2">
-                  <Progress value={csvFile.progress} className="h-2" />
-                  <p className="text-xs text-center text-muted-foreground">
-                    Procesando... {csvFile.progress}%
-                  </p>
-                </div>
-              ) : (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(csvFile.id);
-                  }}
-                  onDragLeave={() => setDragOver(null)}
-                  onDrop={(e) => handleDrop(csvFile.id, e)}
-                  className={cn(
-                    "border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer hover:border-primary hover:bg-primary/5",
-                    dragOver === csvFile.id
-                      ? "border-primary bg-primary/5"
-                      : "border-muted"
-                  )}
-                >
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={(e) => handleFileSelect(csvFile.id, e)}
-                    className="hidden"
-                    id={`file-${csvFile.id}`}
-                  />
-                  <label
-                    htmlFor={`file-${csvFile.id}`}
-                    className="cursor-pointer"
-                  >
-                    <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Arrastra o{" "}
-                      <span className="text-primary font-medium">
-                        selecciona archivo
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Solo archivos .csv
-                    </p>
-                  </label>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Bulk Upload Option */}
-      <Card className="mt-6">
-        <CardContent className="py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="font-semibold text-foreground">Carga múltiple</h3>
-              <p className="text-sm text-muted-foreground">
-                ¿Tienes todos los archivos listos? Súbelos todos de una vez.
-              </p>
-            </div>
-            <Button variant="outline" size="lg">
-              <Upload className="w-4 h-4 mr-2" />
-              Cargar todos los CSV
-            </Button>
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* CSV Upload Cards */}
+        <div className="xl:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {csvFiles.map((csvFile) => (
+              <CsvUploadCard
+                key={csvFile.id}
+                csvFile={csvFile}
+                dragOver={dragOver === csvFile.id}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(csvFile.id);
+                }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={(e) => handleDrop(csvFile.id, e)}
+                onFileSelect={(e) => handleFileSelect(csvFile.id, e)}
+              />
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Bulk Upload */}
+          <BulkUpload
+            csvFiles={csvFiles}
+            onBulkUpload={handleBulkUpload}
+            isUploading={isBulkUploading}
+            uploadProgress={bulkProgress}
+          />
+        </div>
+
+        {/* Upload History */}
+        <div className="xl:col-span-1">
+          <UploadHistory 
+            history={uploadHistory} 
+            onClearHistory={handleClearHistory} 
+          />
+        </div>
+      </div>
     </div>
   );
 }
