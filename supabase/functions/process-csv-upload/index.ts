@@ -21,35 +21,42 @@ interface CsvUploadRequest {
 
 // Configuración de tablas con columnas signature para auto-detección
 // TODAS LAS TABLAS SON REQUERIDAS (5 archivos obligatorios)
+// Configuración de tablas con columnas signature para auto-detección
+// Basado en las columnas reales de los CSVs del cliente
 const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
-  'listado_clientes': {
-    label: 'Listado Clientes',
-    required: true,
-    signatureColumns: ['ID', 'Apellido y Nombre', 'DNI'],
-    allColumns: ['ID', 'Apellido y Nombre', 'Fecha', 'DNI', 'Estado', 'Telefono', 'Celular', 'EMail', 'Origen', 'Sucursal']
-  },
   'agenda_detallada': {
     label: 'Agenda Detallada',
     required: true,
-    signatureColumns: ['Fecha', 'Hora', 'Paciente'],
-    allColumns: ['Fecha', 'Hora', 'Paciente', 'Profesional', 'Prestacion', 'Estado', 'Observaciones', 'Sucursal']
+    // Columnas únicas: IDTurno, Consultorio, Procedimiento
+    signatureColumns: ['IDTurno', 'Consultorio', 'Procedimiento'],
+    allColumns: ['IDTurno', 'Sucursal', 'Consultorio', 'Horario', 'Mins.', 'Profesional', 'IDCliente', 'Nombre', 'Procedimiento', 'Equipo', 'TQP', 'Detalle', 'Estado', 'Confirmado', 'Sesion', 'Usuario', 'Fecha de carga']
   },
   'cartera_pasiva': {
     label: 'Cartera Pasiva',
     required: true,
-    signatureColumns: ['Cliente', 'Ultima Visita', 'Dias Inactivo'],
-    allColumns: ['Cliente', 'Ultima Visita', 'Dias Inactivo', 'Telefono', 'Email', 'Sucursal', 'Profesional']
+    // Columnas únicas: Ultimo Contacto, Ultimo usuario, Ultimo Presupuesto
+    signatureColumns: ['Ultimo Contacto', 'Ultimo usuario', 'Ultimo Presupuesto'],
+    allColumns: ['Nro', 'Apellido', 'Nombre', 'Alta', 'Usuario de Alta', 'Sucursal', 'Ejecutivo', 'Ultimo Contacto', 'Ultimo usuario', 'Tipo', 'Ultimo Presupuesto']
+  },
+  'listado_clientes': {
+    label: 'Listado Clientes',
+    required: true,
+    // Columnas únicas para clientes: DNI, Celular, EMail
+    signatureColumns: ['DNI', 'Celular', 'EMail'],
+    allColumns: ['ID', 'Apellido y Nombre', 'Fecha', 'DNI', 'Estado', 'Telefono', 'Celular', 'EMail', 'Origen', 'Sucursal']
   },
   'leads': {
     label: 'Leads',
     required: true,
-    signatureColumns: ['Nombre', 'Origen', 'Fecha Ingreso'],
+    // Columnas únicas: Origen, Fecha Ingreso, Comentarios
+    signatureColumns: ['Origen', 'Fecha Ingreso', 'Comentarios'],
     allColumns: ['Nombre', 'Telefono', 'Email', 'Origen', 'Fecha Ingreso', 'Estado', 'Comentarios', 'Sucursal']
   },
   'saldos': {
     label: 'Saldos',
     required: true,
-    signatureColumns: ['Cliente', 'Saldo', 'Fecha Ultimo Movimiento'],
+    // Columnas únicas: Saldo, Fecha Ultimo Movimiento
+    signatureColumns: ['Saldo', 'Fecha Ultimo Movimiento'],
     allColumns: ['Cliente', 'Saldo', 'Fecha Ultimo Movimiento', 'Tipo', 'Sucursal']
   }
 }
