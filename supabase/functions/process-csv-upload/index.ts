@@ -115,9 +115,45 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { fileType, fileName, csvData }: CsvUploadRequest = await req.json();
+    let csvData: string;
+    let fileName: string;
+    let fileType: string | undefined;
 
-    console.log(`Processing CSV upload: ${fileName} (type: ${fileType})`);
+    // Detectar si es FormData o JSON
+    const contentType = req.headers.get('content-type') || '';
+    
+    if (contentType.includes('multipart/form-data')) {
+      // Procesar FormData (archivo crudo)
+      const formData = await req.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            stage: 'validation',
+            errors: ['No se proporcionó ningún archivo'] 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      fileName = file.name;
+      csvData = await file.text();
+      fileType = formData.get('fileType') as string | undefined;
+      
+      console.log(`Received FormData upload: ${fileName}`);
+    } else {
+      // Fallback a JSON para compatibilidad
+      const jsonData: CsvUploadRequest = await req.json();
+      csvData = jsonData.csvData;
+      fileName = jsonData.fileName;
+      fileType = jsonData.fileType;
+      
+      console.log(`Received JSON upload: ${fileName}`);
+    }
+
+    console.log(`Processing CSV upload: ${fileName} (type: ${fileType || 'auto-detect'})`);
 
     if (!csvData) {
       return new Response(
@@ -126,10 +162,7 @@ serve(async (req: Request) => {
           stage: 'validation',
           errors: ['No se proporcionaron datos CSV'] 
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
