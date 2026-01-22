@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Sparkles, Mail, Lock, User, Loader2, ArrowLeft } from "lucide-react";
+import { Sparkles, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Email inválido");
@@ -15,51 +15,70 @@ const passwordSchema = z.string().min(6, "La contraseña debe tener al menos 6 c
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { user, loading, signIn, signUp, resetPassword } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, loading } = useAuth();
   
-  const [activeTab, setActiveTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
+  // Check for recovery/invite token in URL hash
   useEffect(() => {
-    if (user && !loading) {
+    const checkTokenInHash = async () => {
+      const hash = window.location.hash;
+      
+      // Supabase puts tokens in the hash: #access_token=...&type=recovery/invite
+      if (hash && (hash.includes("type=recovery") || hash.includes("type=invite") || hash.includes("type=signup"))) {
+        // Let Supabase handle the token exchange
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session from token:", error);
+          setError("El enlace ha expirado o es inválido. Solicita uno nuevo.");
+          setIsCheckingToken(false);
+          return;
+        }
+        
+        if (data.session) {
+          // User is now authenticated via token, show password setting form
+          setIsSettingPassword(true);
+          setEmail(data.session.user.email || "");
+        }
+      }
+      
+      setIsCheckingToken(false);
+    };
+    
+    checkTokenInHash();
+  }, []);
+
+  // Redirect if user is logged in AND not setting password
+  useEffect(() => {
+    if (user && !loading && !isSettingPassword && !isCheckingToken) {
       navigate("/");
     }
-  }, [user, loading, navigate]);
-
-  const validateInputs = () => {
-    try {
-      emailSchema.parse(email);
-    } catch {
-      setError("Por favor ingresa un email válido");
-      return false;
-    }
-
-    if (!showResetPassword) {
-      try {
-        passwordSchema.parse(password);
-      } catch {
-        setError("La contraseña debe tener al menos 6 caracteres");
-        return false;
-      }
-    }
-
-    return true;
-  };
+  }, [user, loading, isSettingPassword, isCheckingToken, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     
-    if (!validateInputs()) return;
+    try {
+      emailSchema.parse(email);
+      passwordSchema.parse(password);
+    } catch {
+      setError("Email o contraseña inválidos");
+      return;
+    }
 
     setIsSubmitting(true);
-    const { error } = await signIn(email, password);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setIsSubmitting(false);
 
     if (error) {
@@ -70,28 +89,8 @@ export default function Auth() {
       } else {
         setError(error.message);
       }
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    
-    if (!validateInputs()) return;
-
-    setIsSubmitting(true);
-    const { error } = await signUp(email, password, fullName);
-    setIsSubmitting(false);
-
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setError("Este email ya está registrado. Intenta iniciar sesión.");
-      } else {
-        setError(error.message);
-      }
     } else {
-      setSuccess("¡Cuenta creada! Revisa tu email para confirmar tu registro.");
-      setActiveTab("login");
+      navigate("/");
     }
   };
 
@@ -107,7 +106,9 @@ export default function Auth() {
     }
 
     setIsSubmitting(true);
-    const { error } = await resetPassword(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
     setIsSubmitting(false);
 
     if (error) {
@@ -118,7 +119,37 @@ export default function Auth() {
     }
   };
 
-  if (loading) {
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      passwordSchema.parse(password);
+    } catch {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setIsSubmitting(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess("¡Contraseña creada exitosamente!");
+      // Clear hash and redirect
+      window.location.hash = "";
+      setTimeout(() => navigate("/"), 1500);
+    }
+  };
+
+  if (loading || isCheckingToken) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -136,11 +167,13 @@ export default function Auth() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Clínica Analytics</CardTitle>
+            <CardTitle className="text-2xl font-bold">Ghigifigueroa Analytics</CardTitle>
             <CardDescription className="text-muted-foreground">
-              {showResetPassword 
-                ? "Recupera tu contraseña" 
-                : "Accede a tu panel de control"
+              {isSettingPassword 
+                ? "Creá tu contraseña para acceder"
+                : showResetPassword 
+                  ? "Recupera tu contraseña" 
+                  : "Accede a tu panel de control"
               }
             </CardDescription>
           </div>
@@ -159,7 +192,66 @@ export default function Auth() {
             </Alert>
           )}
 
-          {showResetPassword ? (
+          {isSettingPassword ? (
+            // Password creation form for invited users
+            <form onSubmit={handleSetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={email}
+                    disabled
+                    className="pl-10 bg-muted"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nueva contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 6 caracteres
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Crear contraseña y entrar
+              </Button>
+            </form>
+          ) : showResetPassword ? (
+            // Password reset request form
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email">Email</Label>
@@ -199,129 +291,60 @@ export default function Auth() {
               </Button>
             </form>
           ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
-              </TabsList>
+            // Login form only (no registration)
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
 
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="tu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Iniciar Sesión
+              </Button>
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
-                    Iniciar Sesión
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="w-full text-muted-foreground"
-                    onClick={() => {
-                      setShowResetPassword(true);
-                      setError("");
-                      setSuccess("");
-                    }}
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nombre completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Juan Pérez"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="tu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Mínimo 6 caracteres
-                    </p>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
-                    Crear cuenta
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+              <Button
+                type="button"
+                variant="link"
+                className="w-full text-muted-foreground"
+                onClick={() => {
+                  setShowResetPassword(true);
+                  setError("");
+                  setSuccess("");
+                }}
+              >
+                ¿Olvidaste tu contraseña?
+              </Button>
+            </form>
           )}
         </CardContent>
       </Card>

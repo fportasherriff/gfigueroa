@@ -11,7 +11,7 @@ export default function Dashboard() {
           Tablero Principal
         </h1>
         <p className="text-muted-foreground mt-1">
-          Visualización de métricas y KPIs de la clínica
+          Visualización de métricas y KPIs
         </p>
       </div>
 
