@@ -77,7 +77,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-semibold text-sm tracking-tight">Clínica Analytics</h1>
+              <h1 className="font-semibold text-sm tracking-tight">Ghigifigueroa Analytics</h1>
               <p className="text-xs text-sidebar-muted">Panel de control</p>
             </div>
           )}
