@@ -293,6 +293,8 @@ export default function CsvUpload() {
         toast.success("Dashboard actualizado correctamente", {
           description: data.message,
         });
+        // Resetear el estado de todos los archivos para un nuevo ciclo de carga
+        setCsvFiles(initialCsvFiles);
       } else {
         const failedViews = data?.results?.filter((r: any) => !r.success) || [];
         if (failedViews.length > 0) {
