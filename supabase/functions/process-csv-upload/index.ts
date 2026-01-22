@@ -316,49 +316,59 @@ serve(async (req: Request) => {
     const totalInserted = snapshotResult?.inserted || parsedRows.length;
     console.log(`Successfully replaced ${totalInserted} records in ${detectedType}`);
 
-    // Refrescar la vista materializada correspondiente
-    const viewMapping: Record<string, string> = {
-      'agenda_detallada': 'mv_agenda_resumen',
-      'cartera_pasiva': 'mv_cartera_analisis',
-      'listado_clientes': 'mv_clientes_resumen',
-      'leads': 'mv_leads_pipeline',
-      'saldos': 'mv_saldos_consolidado'
+    // Refrescar las vistas materializadas en el schema analytics
+    // Cada tabla raw tiene vistas dependientes en analytics
+    const viewMapping: Record<string, string[]> = {
+      'agenda_detallada': ['fact_turnos', 'dim_procedimiento', 'dim_profesional'],
+      'cartera_pasiva': ['fact_cartera_pasiva'],
+      'listado_clientes': ['dim_clientes', 'dim_origen'],
+      'leads': ['fact_leads'],
+      'saldos': [] // saldos puede no tener vista específica, o agregarla si existe
     };
 
-    const viewToRefresh = viewMapping[detectedType];
-    let viewRefreshed = false;
-    let viewRefreshError: string | null = null;
+    const viewsToRefresh = viewMapping[detectedType] || [];
+    const refreshResults: { view: string; success: boolean; error?: string }[] = [];
 
-    if (viewToRefresh) {
-      console.log(`Refreshing materialized view: ${viewToRefresh}`);
+    for (const viewName of viewsToRefresh) {
+      console.log(`Refreshing materialized view: analytics.${viewName}`);
       const { data: refreshResult, error: refreshError } = await supabase.rpc('refresh_view', {
-        view_name: viewToRefresh
+        view_name: viewName
       });
 
       if (refreshError) {
-        console.error(`Error refreshing view ${viewToRefresh}:`, refreshError);
-        viewRefreshError = refreshError.message;
+        console.error(`Error refreshing view ${viewName}:`, refreshError);
+        refreshResults.push({ view: viewName, success: false, error: refreshError.message });
       } else if (refreshResult && refreshResult.success === false) {
-        console.error(`View refresh failed for ${viewToRefresh}:`, refreshResult.error);
-        viewRefreshError = refreshResult.error;
+        console.error(`View refresh failed for ${viewName}:`, refreshResult.error);
+        refreshResults.push({ view: viewName, success: false, error: refreshResult.error });
       } else {
-        console.log(`Successfully refreshed view: ${viewToRefresh}`);
-        viewRefreshed = true;
+        console.log(`Successfully refreshed view: ${viewName}`);
+        refreshResults.push({ view: viewName, success: true });
       }
     }
+
+    const viewsRefreshed = refreshResults.filter(r => r.success).length;
+    const viewsFailed = refreshResults.filter(r => !r.success);
+
+    const viewMessage = viewsToRefresh.length > 0
+      ? viewsRefreshed === viewsToRefresh.length
+        ? ` y se actualizaron ${viewsRefreshed} vista(s)`
+        : ` (${viewsRefreshed}/${viewsToRefresh.length} vistas actualizadas)`
+      : '';
 
     return new Response(
       JSON.stringify({
         success: true,
         stage: 'complete',
-        message: `Se reemplazaron ${totalInserted} registros en ${tableConfig.label}${viewRefreshed ? ' y se actualizó la vista' : ''}`,
+        message: `Se reemplazaron ${totalInserted} registros en ${tableConfig.label}${viewMessage}`,
         recordsProcessed: totalInserted,
         fileType: detectedType,
         fileName,
         detectedLabel: tableConfig.label,
         headers: headers,
-        viewRefreshed,
-        viewRefreshError,
+        viewsRefreshed: viewsRefreshed,
+        viewsFailed: viewsFailed.map(v => v.view),
+        refreshResults,
       }),
       { 
         status: 200, 

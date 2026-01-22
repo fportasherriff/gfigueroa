@@ -6,13 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Lista de vistas materializadas a refrescar
+// Lista de vistas materializadas a refrescar (schema analytics)
 const MATERIALIZED_VIEWS = [
-  'mv_agenda_resumen',
-  'mv_cartera_analisis',
-  'mv_clientes_resumen',
-  'mv_leads_pipeline',
-  'mv_saldos_consolidado'
+  'fact_turnos',
+  'fact_cartera_pasiva',
+  'fact_leads',
+  'dim_clientes',
+  'dim_origen',
+  'dim_procedimiento',
+  'dim_profesional'
 ];
 
 serve(async (req: Request) => {
