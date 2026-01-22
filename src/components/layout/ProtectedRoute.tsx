@@ -1,6 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useEffect, useRef } from "react";
 
 interface ProtectedRouteProps {
   requireAdmin?: boolean;
@@ -8,6 +10,14 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ requireAdmin = false }: ProtectedRouteProps) {
   const { user, loading, isAdmin } = useAuth();
+  const hasShownToast = useRef(false);
+
+  useEffect(() => {
+    if (!loading && requireAdmin && user && !isAdmin && !hasShownToast.current) {
+      toast.error("No tienes permisos para acceder a esta página");
+      hasShownToast.current = true;
+    }
+  }, [loading, requireAdmin, user, isAdmin]);
 
   if (loading) {
     return (
