@@ -289,20 +289,22 @@ export default function CsvUpload() {
       
       if (error) throw error;
       
+      // Resetear el estado de todos los archivos para un nuevo ciclo de carga
+      setCsvFiles(initialCsvFiles);
+      setUploadHistory([]);
+      
       if (data?.success) {
-        toast.success("Dashboard actualizado correctamente", {
-          description: data.message,
+        toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
+          description: "Los archivos fueron procesados. Podés comenzar un nuevo ciclo de carga.",
         });
-        // Resetear el estado de todos los archivos para un nuevo ciclo de carga
-        setCsvFiles(initialCsvFiles);
       } else {
         const failedViews = data?.results?.filter((r: any) => !r.success) || [];
         if (failedViews.length > 0) {
-          toast.warning(`Algunas vistas no se actualizaron`, {
-            description: failedViews.map((v: any) => v.view).join(', '),
+          toast.warning(`Dashboard actualizado con advertencias`, {
+            description: `Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(', ')}`,
           });
         } else {
-          toast.error('Error al actualizar el dashboard');
+          toast.success("Dashboard actualizado - Nuevo ciclo iniciado");
         }
       }
     } catch (error) {
