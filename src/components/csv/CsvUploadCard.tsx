@@ -4,10 +4,12 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Clock,
-  RefreshCw
+  RefreshCw,
+  Info
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { CsvFile } from "@/types/csv";
 
@@ -18,6 +20,7 @@ interface CsvUploadCardProps {
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  downloadInstruction?: string;
 }
 
 export function CsvUploadCard({
@@ -27,6 +30,7 @@ export function CsvUploadCard({
   onDragLeave,
   onDrop,
   onFileSelect,
+  downloadInstruction,
 }: CsvUploadCardProps) {
   const getStatusIcon = (status: CsvFile["status"]) => {
     switch (status) {
@@ -55,7 +59,26 @@ export function CsvUploadCard({
               <FileSpreadsheet className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-base leading-tight">{csvFile.name}</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-base leading-tight">{csvFile.name}</CardTitle>
+                {downloadInstruction && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          type="button"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground text-xs font-medium transition-colors cursor-help"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-sm">
+                        <p>{downloadInstruction}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
               {csvFile.lastUpdated && (
                 <CardDescription className="text-xs">
                   Última actualización: {csvFile.lastUpdated}
