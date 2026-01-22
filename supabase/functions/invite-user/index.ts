@@ -65,41 +65,56 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Invite user using admin API
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
+    // Create user using admin API with email confirmation required
+    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: email,
+      email_confirm: false, // User must confirm email
+      user_metadata: {
         full_name: fullName || email,
       },
-      redirectTo: `${supabaseUrl.replace('.supabase.co', '')}/auth/v1/verify`,
     });
 
-    if (inviteError) {
-      console.error("Invite error:", inviteError);
+    if (createError) {
+      console.error("Create user error:", createError);
       return new Response(
-        JSON.stringify({ success: false, error: inviteError.message }),
+        JSON.stringify({ success: false, error: createError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // If role is admin, update the user_roles table
-    // The trigger should have created a default 'user' role
-    if (role === "admin" && inviteData.user) {
+    if (role === "admin" && userData.user) {
       // Wait a moment for the trigger to create the profile and role
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const { error: roleError } = await supabaseAdmin
         .from("user_roles")
         .update({ role: "admin" })
-        .eq("user_id", inviteData.user.id);
+        .eq("user_id", userData.user.id);
 
       if (roleError) {
         console.error("Role update error:", roleError);
-        // Don't fail the whole operation, just log it
       }
     }
 
+    // Generate password reset link so user can set their password
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: email,
+      options: {
+        redirectTo: "https://id-preview--3a86ef41-ba39-4b90-94a6-16ffe456eee8.lovable.app/",
+      },
+    });
+
+    if (linkError) {
+      console.error("Link generation error:", linkError);
+      // User was created but link failed - they can use password reset
+    }
+
+    console.log("User created successfully:", userData.user?.id);
+
     return new Response(
-      JSON.stringify({ success: true, user: inviteData.user }),
+      JSON.stringify({ success: true, user: userData.user }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
