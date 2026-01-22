@@ -121,22 +121,20 @@ export default function CsvUpload() {
         )
       );
 
-      // CORRECCIÓN: Crear FormData en lugar de JSON
+      // Crear FormData con el tipo esperado para validación estricta
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('expectedType', fileId); // Enviar el tipo esperado para validación
 
       // Llamar a la Edge Function con FormData
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/process-csv-upload`,
+        `https://ehpmvahaixellqfwwyam.supabase.co/functions/v1/process-csv-upload`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocG12YWhhaXhlbGxxZnd3eWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NjUzNDAsImV4cCI6MjA4NDE0MTM0MH0.VAfGXWOqrq-PpbA9zwvky3wi8td22luGPGl-VwEM_e4`,
           },
-          body: formData, // ← Enviar FormData, no JSON
+          body: formData,
         }
       );
 
