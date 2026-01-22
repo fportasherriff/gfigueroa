@@ -21,6 +21,10 @@ export type Database = {
     }
     Functions: {
       execute_sql: { Args: { query: string }; Returns: Json }
+      raw_snapshot_replace: {
+        Args: { rows: Json; table_key: string }
+        Returns: Json
+      }
       refresh_view: { Args: { view_name: string }; Returns: Json }
     }
     Enums: {

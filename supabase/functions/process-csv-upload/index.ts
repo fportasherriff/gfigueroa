@@ -243,29 +243,24 @@ serve(async (req: Request) => {
 
     console.log(`Parsed ${parsedRows.length} rows. Starting database operations for table: ${detectedType}`);
 
-    // Helper para escapar valores SQL
-    const escapeValue = (val: string | null): string => {
-      if (val === null) return 'NULL';
-      return `'${val.replace(/'/g, "''")}'`;
-    };
-
-    // Step 1: Delete all existing records usando execute_sql RPC
-    const deleteQuery = `DELETE FROM raw.${detectedType}`;
-    console.log(`Executing delete: ${deleteQuery}`);
+    // Usar la función raw_snapshot_replace que hace DELETE + INSERT en una sola transacción
+    // Esto evita el problema de "DELETE requires WHERE clause"
+    console.log(`Calling raw_snapshot_replace for ${detectedType} with ${parsedRows.length} rows`);
     
-    const { data: deleteResult, error: deleteError } = await supabase.rpc('execute_sql', { 
-      query: deleteQuery 
+    const { data: snapshotResult, error: snapshotError } = await supabase.rpc('raw_snapshot_replace', { 
+      table_key: detectedType,
+      rows: parsedRows
     });
 
-    console.log(`Delete result:`, JSON.stringify(deleteResult));
+    console.log(`Snapshot replace result:`, JSON.stringify(snapshotResult));
 
-    if (deleteError) {
-      console.error(`Error calling RPC for ${detectedType}:`, deleteError);
+    if (snapshotError) {
+      console.error(`Error calling raw_snapshot_replace for ${detectedType}:`, snapshotError);
       return new Response(
         JSON.stringify({
           success: false,
-          stage: 'delete',
-          errors: [`Error al limpiar tabla ${tableConfig.label}: ${deleteError.message}`],
+          stage: 'snapshot_replace',
+          errors: [`Error al reemplazar datos en ${tableConfig.label}: ${snapshotError.message}`],
         }),
         { 
           status: 500, 
@@ -274,14 +269,14 @@ serve(async (req: Request) => {
       );
     }
 
-    // Verificar el resultado de execute_sql (devuelve {success: bool, error?: string})
-    if (deleteResult && deleteResult.success === false) {
-      console.error(`SQL error deleting from ${detectedType}:`, deleteResult.error);
+    // Verificar el resultado de la función
+    if (snapshotResult && snapshotResult.success === false) {
+      console.error(`SQL error in raw_snapshot_replace for ${detectedType}:`, snapshotResult.error);
       return new Response(
         JSON.stringify({
           success: false,
-          stage: 'delete',
-          errors: [`Error SQL al limpiar tabla ${tableConfig.label}: ${deleteResult.error}`],
+          stage: 'snapshot_replace',
+          errors: [`Error SQL en ${tableConfig.label}: ${snapshotResult.error}`],
         }),
         { 
           status: 500, 
@@ -290,59 +285,8 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log(`Deleted existing records from ${detectedType}. Inserting ${parsedRows.length} new rows...`);
-
-    // Step 2: Insert new records in batches usando execute_sql RPC
-    const BATCH_SIZE = 100; // Reducido para evitar queries muy largas
-    let totalInserted = 0;
-    const errors: string[] = [];
-
-    // Obtener las columnas que realmente tenemos datos
-    const columnsToInsert = tableConfig.allColumns;
-    const quotedColumns = columnsToInsert.map(c => `"${c}"`).join(', ');
-
-    for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
-      const batch = parsedRows.slice(i, i + BATCH_SIZE);
-      
-      const valueRows = batch.map(row => {
-        const values = columnsToInsert.map(col => escapeValue(row[col] ?? null));
-        return `(${values.join(', ')})`;
-      }).join(',\n');
-
-      const insertQuery = `INSERT INTO raw.${detectedType} (${quotedColumns}) VALUES ${valueRows}`;
-      
-      const { data: insertResult, error: insertError } = await supabase.rpc('execute_sql', { 
-        query: insertQuery 
-      });
-
-      console.log(`Insert batch ${Math.floor(i / BATCH_SIZE) + 1} result:`, JSON.stringify(insertResult));
-
-      if (insertError) {
-        console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertError);
-        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertError.message}`);
-      } else if (insertResult && insertResult.success === false) {
-        console.error(`SQL error in batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertResult.error);
-        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertResult.error}`);
-      } else {
-        totalInserted += batch.length;
-      }
-    }
-
-    if (errors.length > 0 && totalInserted === 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          stage: 'insert',
-          errors: errors,
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    console.log(`Successfully inserted ${totalInserted} records into ${detectedType}`);
+    const totalInserted = snapshotResult?.inserted || parsedRows.length;
+    console.log(`Successfully replaced ${totalInserted} records in ${detectedType}`);
 
     return new Response(
       JSON.stringify({
@@ -354,7 +298,6 @@ serve(async (req: Request) => {
         fileName,
         detectedLabel: tableConfig.label,
         headers: headers,
-        warnings: errors.length > 0 ? errors : undefined
       }),
       { 
         status: 200, 
