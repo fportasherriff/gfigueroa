@@ -15,6 +15,7 @@ interface TableDefinition {
 
 interface CsvUploadRequest {
   fileType?: string;
+  expectedType?: string; // Tipo esperado desde el frontend (para validación estricta)
   fileName: string;
   csvData: string;
 }
@@ -118,6 +119,7 @@ serve(async (req: Request) => {
     let csvData: string;
     let fileName: string;
     let fileType: string | undefined;
+    let expectedType: string | undefined; // Tipo esperado desde el frontend
 
     // Detectar si es FormData o JSON
     const contentType = req.headers.get('content-type') || '';
@@ -141,16 +143,18 @@ serve(async (req: Request) => {
       fileName = file.name;
       csvData = await file.text();
       fileType = formData.get('fileType') as string | undefined;
+      expectedType = formData.get('expectedType') as string | undefined;
       
-      console.log(`Received FormData upload: ${fileName}`);
+      console.log(`Received FormData upload: ${fileName}, expectedType: ${expectedType || 'none'}`);
     } else {
       // Fallback a JSON para compatibilidad
       const jsonData: CsvUploadRequest = await req.json();
       csvData = jsonData.csvData;
       fileName = jsonData.fileName;
       fileType = jsonData.fileType;
+      expectedType = jsonData.expectedType;
       
-      console.log(`Received JSON upload: ${fileName}`);
+      console.log(`Received JSON upload: ${fileName}, expectedType: ${expectedType || 'none'}`);
     }
 
     console.log(`Processing CSV upload: ${fileName} (type: ${fileType || 'auto-detect'})`);
@@ -210,6 +214,30 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // VALIDACIÓN ESTRICTA: Si se especificó un expectedType, verificar que coincida con el detectado
+    if (expectedType && TABLE_DEFINITIONS[expectedType]) {
+      if (detectedType !== expectedType) {
+        const expectedLabel = TABLE_DEFINITIONS[expectedType].label;
+        const detectedLabel = TABLE_DEFINITIONS[detectedType].label;
+        console.log(`Type mismatch: expected ${expectedType}, detected ${detectedType}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            stage: 'type_mismatch',
+            errors: [`El archivo subido corresponde a "${detectedLabel}", pero se esperaba "${expectedLabel}". Por favor, sube el archivo correcto en esta tarjeta.`],
+            expectedType: expectedType,
+            detectedType: detectedType,
+            expectedLabel: expectedLabel,
+            detectedLabel: detectedLabel,
+          }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
 
     const tableConfig = TABLE_DEFINITIONS[detectedType];
@@ -288,16 +316,49 @@ serve(async (req: Request) => {
     const totalInserted = snapshotResult?.inserted || parsedRows.length;
     console.log(`Successfully replaced ${totalInserted} records in ${detectedType}`);
 
+    // Refrescar la vista materializada correspondiente
+    const viewMapping: Record<string, string> = {
+      'agenda_detallada': 'mv_agenda_resumen',
+      'cartera_pasiva': 'mv_cartera_analisis',
+      'listado_clientes': 'mv_clientes_resumen',
+      'leads': 'mv_leads_pipeline',
+      'saldos': 'mv_saldos_consolidado'
+    };
+
+    const viewToRefresh = viewMapping[detectedType];
+    let viewRefreshed = false;
+    let viewRefreshError: string | null = null;
+
+    if (viewToRefresh) {
+      console.log(`Refreshing materialized view: ${viewToRefresh}`);
+      const { data: refreshResult, error: refreshError } = await supabase.rpc('refresh_view', {
+        view_name: viewToRefresh
+      });
+
+      if (refreshError) {
+        console.error(`Error refreshing view ${viewToRefresh}:`, refreshError);
+        viewRefreshError = refreshError.message;
+      } else if (refreshResult && refreshResult.success === false) {
+        console.error(`View refresh failed for ${viewToRefresh}:`, refreshResult.error);
+        viewRefreshError = refreshResult.error;
+      } else {
+        console.log(`Successfully refreshed view: ${viewToRefresh}`);
+        viewRefreshed = true;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         stage: 'complete',
-        message: `Se reemplazaron ${totalInserted} registros en ${tableConfig.label}`,
+        message: `Se reemplazaron ${totalInserted} registros en ${tableConfig.label}${viewRefreshed ? ' y se actualizó la vista' : ''}`,
         recordsProcessed: totalInserted,
         fileType: detectedType,
         fileName,
         detectedLabel: tableConfig.label,
         headers: headers,
+        viewRefreshed,
+        viewRefreshError,
       }),
       { 
         status: 200, 
