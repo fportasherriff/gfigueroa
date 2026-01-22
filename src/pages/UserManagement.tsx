@@ -18,12 +18,8 @@ import {
   Shield, 
   ShieldCheck, 
   Loader2, 
-  Search,
-  MoreHorizontal,
-  Trash2,
-  Edit
+  Search
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface UserProfile {
@@ -48,19 +44,6 @@ const getInitials = (name: string | null, email: string): string => {
   return email.substring(0, 2).toUpperCase();
 };
 
-// Helper to generate consistent color from string
-const getAvatarColor = (str: string): string => {
-  const colors = [
-    "bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500",
-    "bg-pink-500", "bg-teal-500", "bg-indigo-500", "bg-cyan-500"
-  ];
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
-
 export default function UserManagement() {
   const navigate = useNavigate();
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -72,6 +55,9 @@ export default function UserManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [editFullName, setEditFullName] = useState("");
+  const [editError, setEditError] = useState("");
   
   // New user form
   const [newEmail, setNewEmail] = useState("");
@@ -138,7 +124,13 @@ export default function UserManagement() {
       // Handle edge function errors (non-2xx responses)
       if (error) {
         const errorMessage = error.message || "Error al invitar usuario";
-        if (errorMessage.includes("already") || errorMessage.includes("registered")) {
+        if (
+          errorMessage.includes("rate limit") ||
+          errorMessage.includes("over_email_send_rate_limit") ||
+          errorMessage.includes("429")
+        ) {
+          setFormError("Límite de envío de emails alcanzado. Esperá unos minutos e intentá de nuevo.");
+        } else if (errorMessage.includes("already") || errorMessage.includes("registered")) {
           setFormError("Este email ya está registrado en el sistema");
         } else {
           setFormError(errorMessage);
@@ -149,7 +141,12 @@ export default function UserManagement() {
       // Handle application-level errors from the response
       if (!data?.success) {
         const errorMessage = data?.error || "Error al invitar usuario";
-        if (errorMessage.includes("already") || errorMessage.includes("registered")) {
+        if (
+          errorMessage.includes("rate limit") ||
+          errorMessage.includes("over_email_send_rate_limit")
+        ) {
+          setFormError("Límite de envío de emails alcanzado. Esperá unos minutos e intentá de nuevo.");
+        } else if (errorMessage.includes("already") || errorMessage.includes("registered")) {
           setFormError("Este email ya está registrado en el sistema");
         } else {
           setFormError(errorMessage);
@@ -215,6 +212,40 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Error updating role:", error);
       toast.error("Error al actualizar rol");
+    }
+  };
+
+  const openEditName = (userProfile: UserProfile) => {
+    setSelectedUser(userProfile);
+    setEditFullName(userProfile.full_name || "");
+    setEditError("");
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!selectedUser) return;
+    setEditError("");
+    setIsSavingName(true);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: editFullName.trim() || null })
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === selectedUser.id ? { ...u, full_name: editFullName.trim() || null } : u))
+      );
+
+      toast.success("Nombre actualizado");
+      setIsEditDialogOpen(false);
+    } catch (e: any) {
+      console.error("Error updating name:", e);
+      setEditError(e?.message || "Error al actualizar el nombre");
+    } finally {
+      setIsSavingName(false);
     }
   };
 
@@ -375,7 +406,7 @@ export default function UserManagement() {
                   <TableRow key={userProfile.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full ${getAvatarColor(userProfile.email)} flex items-center justify-center text-white font-medium text-sm`}>
+                        <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium text-sm">
                           {getInitials(userProfile.full_name, userProfile.email)}
                         </div>
                         <span className="font-medium">
@@ -410,9 +441,16 @@ export default function UserManagement() {
                           onCheckedChange={() => handleToggleActive(userProfile)}
                           disabled={userProfile.user_id === user?.id}
                         />
-                        <span className={userProfile.is_active ? "text-green-600" : "text-orange-500"}>
+                        <Badge
+                          variant="outline"
+                          className={
+                            userProfile.is_active
+                              ? "border-success/20 bg-success/10 text-success"
+                              : "border-warning/20 bg-warning/10 text-warning"
+                          }
+                        >
                           {userProfile.is_active ? "Activo" : "Inactivo"}
-                        </span>
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -420,8 +458,7 @@ export default function UserManagement() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setSelectedUser(userProfile);
-                          setIsEditDialogOpen(true);
+                          openEditName(userProfile);
                         }}
                         disabled={userProfile.user_id === user?.id}
                         className="text-primary hover:text-primary/80"
@@ -437,51 +474,39 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit Role Dialog */}
+      {/* Edit Name Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cambiar Rol de Usuario</DialogTitle>
+            <DialogTitle>Editar nombre</DialogTitle>
             <DialogDescription>
-              Actualiza el rol de {selectedUser?.full_name || "este usuario"}
+              Actualiza el nombre de {selectedUser?.email || "este usuario"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nuevo rol</Label>
-              <Select
-                value={selectedUser?.role}
-                onValueChange={(v) => {
-                  if (selectedUser) {
-                    handleUpdateRole(selectedUser, v as "admin" | "user");
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      Usuario
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" />
-                      Administrador
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {editError && (
+            <Alert variant="destructive">
+              <AlertDescription>{editError}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-fullname">Nombre completo</Label>
+            <Input
+              id="edit-fullname"
+              placeholder="Nombre"
+              value={editFullName}
+              onChange={(e) => setEditFullName(e.target.value)}
+            />
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cerrar
+            </Button>
+            <Button onClick={handleSaveName} disabled={isSavingName}>
+              {isSavingName && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Guardar
             </Button>
           </DialogFooter>
         </DialogContent>
