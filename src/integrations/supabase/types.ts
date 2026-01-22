@@ -20,7 +20,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      execute_sql: { Args: { query: string }; Returns: undefined }
+      execute_sql: { Args: { query: string }; Returns: Json }
       refresh_view: { Args: { view_name: string }; Returns: Json }
     }
     Enums: {
