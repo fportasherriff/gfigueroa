@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Upload, 
-  LifeBuoy, 
+import {
+  LayoutDashboard,
+  Upload,
+  LifeBuoy,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Users,
   LogOut,
-  User
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,15 +58,13 @@ export function AppSidebar() {
     navigate("/auth");
   };
 
-  const filteredNavItems = navItems.filter(
-    (item) => !item.adminOnly || isAdmin
-  );
+  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
       className={cn(
         "flex flex-col h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out border-r border-sidebar-border",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-64",
       )}
     >
       {/* Logo */}
@@ -77,7 +75,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="animate-fade-in">
-              <h1 className="font-semibold text-sm tracking-tight">Ghigifigueroa Analytics</h1>
+              <h1 className="font-semibold text-sm tracking-tight">Ghigi Figueroa Analytics</h1>
               <p className="text-xs text-sidebar-muted">Panel de control</p>
             </div>
           )}
@@ -96,13 +94,11 @@ export function AppSidebar() {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  : "text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
               )}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
-              {!collapsed && (
-                <span className="animate-fade-in">{item.title}</span>
-              )}
+              {!collapsed && <span className="animate-fade-in">{item.title}</span>}
             </NavLink>
           );
         })}
@@ -111,32 +107,30 @@ export function AppSidebar() {
       {/* User Section */}
       {user && (
         <div className="px-3 py-3 border-t border-sidebar-border">
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/30",
-            collapsed && "justify-center px-2"
-          )}>
+          <div
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/30",
+              collapsed && "justify-center px-2",
+            )}
+          >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sidebar-primary/20">
               <User className="w-4 h-4 text-sidebar-primary" />
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0 animate-fade-in">
-                <p className="text-xs font-medium truncate text-sidebar-foreground">
-                  {user.email}
-                </p>
-                <p className="text-xs text-sidebar-muted">
-                  {isAdmin ? "Administrador" : "Usuario"}
-                </p>
+                <p className="text-xs font-medium truncate text-sidebar-foreground">{user.email}</p>
+                <p className="text-xs text-sidebar-muted">{isAdmin ? "Administrador" : "Usuario"}</p>
               </div>
             )}
           </div>
-          
+
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
             className={cn(
               "w-full mt-2 text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
-              collapsed && "px-2"
+              collapsed && "px-2",
             )}
           >
             <LogOut className="w-4 h-4" />

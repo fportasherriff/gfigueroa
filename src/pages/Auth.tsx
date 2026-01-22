@@ -17,7 +17,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, loading } = useAuth();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,29 +32,29 @@ export default function Auth() {
   useEffect(() => {
     const checkTokenInHash = async () => {
       const hash = window.location.hash;
-      
+
       // Supabase puts tokens in the hash: #access_token=...&type=recovery/invite
       if (hash && (hash.includes("type=recovery") || hash.includes("type=invite") || hash.includes("type=signup"))) {
         // Let Supabase handle the token exchange
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error("Error getting session from token:", error);
           setError("El enlace ha expirado o es inválido. Solicita uno nuevo.");
           setIsCheckingToken(false);
           return;
         }
-        
+
         if (data.session) {
           // User is now authenticated via token, show password setting form
           setIsSettingPassword(true);
           setEmail(data.session.user.email || "");
         }
       }
-      
+
       setIsCheckingToken(false);
     };
-    
+
     checkTokenInHash();
   }, []);
 
@@ -68,7 +68,7 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     try {
       emailSchema.parse(email);
       passwordSchema.parse(password);
@@ -97,7 +97,7 @@ export default function Auth() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     try {
       emailSchema.parse(email);
     } catch {
@@ -167,14 +167,13 @@ export default function Auth() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Ghigifigueroa Analytics</CardTitle>
+            <CardTitle className="text-2xl font-bold">Ghigi-Figueroa Analytics</CardTitle>
             <CardDescription className="text-muted-foreground">
-              {isSettingPassword 
+              {isSettingPassword
                 ? "Creá tu contraseña para acceder"
-                : showResetPassword 
-                  ? "Recupera tu contraseña" 
-                  : "Accede a tu panel de control"
-              }
+                : showResetPassword
+                  ? "Recupera tu contraseña"
+                  : "Accede a tu panel de control"}
             </CardDescription>
           </div>
         </CardHeader>
@@ -199,12 +198,7 @@ export default function Auth() {
                 <Label>Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    value={email}
-                    disabled
-                    className="pl-10 bg-muted"
-                  />
+                  <Input type="email" value={email} disabled className="pl-10 bg-muted" />
                 </div>
               </div>
 
@@ -222,9 +216,7 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 6 caracteres
-                </p>
+                <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
               </div>
 
               <div className="space-y-2">
@@ -244,9 +236,7 @@ export default function Auth() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Crear contraseña y entrar
               </Button>
             </form>
@@ -270,9 +260,7 @@ export default function Auth() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Enviar instrucciones
               </Button>
 
@@ -326,9 +314,7 @@ export default function Auth() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Iniciar Sesión
               </Button>
 
