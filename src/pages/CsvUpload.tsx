@@ -9,6 +9,15 @@ import { CsvUploadCard } from "@/components/csv/CsvUploadCard";
 import { UploadHistory } from "@/components/csv/UploadHistory";
 import { BulkUpload } from "@/components/csv/BulkUpload";
 
+// Instrucciones de descarga para cada tipo de archivo
+const downloadInstructions: Record<string, string> = {
+  agenda_detallada: "En SIAP: Reportes → Agenda Detallada. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
+  cartera_pasiva: "En SIAP: Reportes → Cartera Pasiva. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
+  leads: "En SIAP: Reportes → Leads. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
+  listado_clientes: "En SIAP: Reportes → Listado Clientes. Importante: usá fecha desde 01/01/2020 o anterior para incluir todo el historial.",
+  saldos: "En SIAP: Reportes → Saldos. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
+};
+
 const initialCsvFiles: CsvFile[] = [
   {
     id: "agenda_detallada",
@@ -317,7 +326,20 @@ export default function CsvUpload() {
         <p className="text-muted-foreground mt-1">Sube los archivos CSV para actualizar los datos del tablero</p>
       </div>
 
-      {/* Status Card + Refresh Button */}
+      {/* Info Banner - Cómo funciona (PRIMERO) */}
+      <Card className="mb-6 border-info/30 bg-info/5">
+        <CardContent className="py-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-info mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Descargá los archivos CSV desde SIAP y súbilos aquí. Cada tarjeta tiene un ícono <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted text-muted-foreground text-xs font-medium">i</span> que te indica cómo descargar ese reporte específico. Una vez cargados los 5 archivos, podrás actualizar el dashboard con los nuevos datos.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Status Card + Refresh Button (SEGUNDO) */}
       <Card
         className={`mb-6 ${uploadStatus.allLoaded ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}
       >
@@ -359,20 +381,6 @@ export default function CsvUpload() {
         </CardContent>
       </Card>
 
-      {/* Info Banner */}
-      <Card className="mb-6 border-info/30 bg-info/5">
-        <CardContent className="py-4 flex items-start gap-3">
-          <Info className="w-5 h-5 text-info mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Descarga los archivos CSV desde SIAP y súbelos aquí. Una vez cargados los 5 archivos, podrás actualizar el
-              dashboard con los nuevos datos.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* CSV Upload Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {csvFiles.map((csvFile) => (
@@ -387,6 +395,7 @@ export default function CsvUpload() {
             onDragLeave={() => setDragOver(null)}
             onDrop={(e) => handleDrop(csvFile.id, e)}
             onFileSelect={(e) => handleFileSelect(csvFile.id, e)}
+            downloadInstruction={downloadInstructions[csvFile.id]}
           />
         ))}
       </div>
