@@ -100,23 +100,30 @@ export default function CsvUpload() {
     }
 
     try {
-      // Read CSV file content
-      const csvContent = await file.text();
-      
       setCsvFiles((prev) =>
         prev.map((f) =>
           f.id === fileId ? { ...f, progress: 50 } : f
         )
       );
 
-      // Call the Edge Function
-      const { data, error } = await supabase.functions.invoke('process-csv-upload', {
-        body: {
-          fileType: fileId,
-          fileName: file.name,
-          csvData: csvContent,
-        },
-      });
+      // CORRECCIÓN: Crear FormData en lugar de JSON
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Llamar a la Edge Function con FormData
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/process-csv-upload`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: formData, // ← Enviar FormData, no JSON
+        }
+      );
 
       setCsvFiles((prev) =>
         prev.map((f) =>
@@ -124,9 +131,12 @@ export default function CsvUpload() {
         )
       );
 
-      if (error) {
-        throw new Error(error.message || 'Error al procesar el archivo');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0] || 'Error al procesar el archivo');
       }
+
+      const data = await response.json();
 
       setCsvFiles((prev) =>
         prev.map((f) =>
@@ -147,7 +157,7 @@ export default function CsvUpload() {
         fileName: file.name,
         status: "success",
         message: data?.message || `Datos actualizados correctamente`,
-        recordsProcessed: data?.recordsProcessed,
+        recordsProcessed: data?.stats,
       });
 
       toast.success(`${file.name} procesado exitosamente`, {
@@ -157,7 +167,7 @@ export default function CsvUpload() {
       return true;
     } catch (error) {
       console.error('Error uploading CSV:', error);
-      
+
       setCsvFiles((prev) =>
         prev.map((f) =>
           f.id === fileId
