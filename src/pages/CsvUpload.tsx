@@ -66,8 +66,8 @@ export default function CsvUpload() {
 
   // Calcular cuáles archivos están cargados exitosamente
   const uploadStatus = useMemo(() => {
-    const loaded = csvFiles.filter(f => f.status === "success");
-    const missing = csvFiles.filter(f => f.status !== "success");
+    const loaded = csvFiles.filter((f) => f.status === "success");
+    const missing = csvFiles.filter((f) => f.status !== "success");
     return {
       loadedCount: loaded.length,
       totalCount: csvFiles.length,
@@ -86,124 +86,102 @@ export default function CsvUpload() {
     setUploadHistory((prev) => [newEntry, ...prev]);
   }, []);
 
-  const handleFileUpload = useCallback(async (fileId: string, file: File): Promise<boolean> => {
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Solo se permiten archivos CSV");
-      return false;
-    }
-
-    const csvFile = csvFiles.find(f => f.id === fileId);
-    if (!csvFile) {
-      toast.error("Tipo de archivo no reconocido");
-      return false;
-    }
-
-    setCsvFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId ? { ...f, status: "uploading", progress: 0 } : f
-      )
-    );
-
-    // Simulate initial progress
-    for (let i = 0; i <= 30; i += 10) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      setCsvFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId ? { ...f, progress: i } : f
-        )
-      );
-    }
-
-    try {
-      setCsvFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId ? { ...f, progress: 50 } : f
-        )
-      );
-
-      // Crear FormData con el tipo esperado para validación estricta
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('expectedType', fileId); // Enviar el tipo esperado para validación
-
-      // Llamar a la Edge Function con FormData
-      const response = await fetch(
-        `https://ehpmvahaixellqfwwyam.supabase.co/functions/v1/process-csv-upload`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocG12YWhhaXhlbGxxZnd3eWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NjUzNDAsImV4cCI6MjA4NDE0MTM0MH0.VAfGXWOqrq-PpbA9zwvky3wi8td22luGPGl-VwEM_e4`,
-          },
-          body: formData,
-        }
-      );
-
-      setCsvFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId ? { ...f, progress: 90 } : f
-        )
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0] || 'Error al procesar el archivo');
+  const handleFileUpload = useCallback(
+    async (fileId: string, file: File): Promise<boolean> => {
+      if (!file.name.endsWith(".csv")) {
+        toast.error("Solo se permiten archivos CSV");
+        return false;
       }
 
-      const data = await response.json();
+      const csvFile = csvFiles.find((f) => f.id === fileId);
+      if (!csvFile) {
+        toast.error("Tipo de archivo no reconocido");
+        return false;
+      }
 
-      setCsvFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId
-            ? {
-                ...f,
-                status: "success",
-                progress: 100,
-                lastUpdated: new Date().toLocaleString("es-ES"),
-              }
-            : f
-        )
-      );
+      setCsvFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "uploading", progress: 0 } : f)));
 
-      // Add to history
-      addToHistory({
-        fileType: csvFile.name,
-        fileName: file.name,
-        status: "success",
-        message: data?.message || `Datos actualizados correctamente`,
-        recordsProcessed: data?.stats,
-      });
+      // Simulate initial progress
+      for (let i = 0; i <= 30; i += 10) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        setCsvFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress: i } : f)));
+      }
 
-      toast.success(`${file.name} procesado exitosamente`, {
-        description: data?.message || `Se actualizaron los datos de ${csvFile.name}`,
-      });
+      try {
+        setCsvFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress: 50 } : f)));
 
-      return true;
-    } catch (error) {
-      console.error('Error uploading CSV:', error);
+        // Crear FormData con el tipo esperado para validación estricta
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("expectedType", fileId); // Enviar el tipo esperado para validación
 
-      setCsvFiles((prev) =>
-        prev.map((f) =>
-          f.id === fileId
-            ? { ...f, status: "error", progress: 0 }
-            : f
-        )
-      );
+        // Llamar a la Edge Function con FormData
+        const response = await fetch(`https://ehpmvahaixellqfwwyam.supabase.co/functions/v1/process-csv-upload`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocG12YWhhaXhlbGxxZnd3eWFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1NjUzNDAsImV4cCI6MjA4NDE0MTM0MH0.VAfGXWOqrq-PpbA9zwvky3wi8td22luGPGl-VwEM_e4`,
+          },
+          body: formData,
+        });
 
-      // Add to history
-      addToHistory({
-        fileType: csvFile.name,
-        fileName: file.name,
-        status: "error",
-        message: error instanceof Error ? error.message : 'Error desconocido',
-      });
+        setCsvFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, progress: 90 } : f)));
 
-      toast.error(`Error al procesar ${file.name}`, {
-        description: error instanceof Error ? error.message : 'Error desconocido',
-      });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.errors?.[0] || "Error al procesar el archivo");
+        }
 
-      return false;
-    }
-  }, [csvFiles, addToHistory]);
+        const data = await response.json();
+
+        setCsvFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  status: "success",
+                  progress: 100,
+                  lastUpdated: new Date().toLocaleString("es-ES"),
+                }
+              : f,
+          ),
+        );
+
+        // Add to history
+        addToHistory({
+          fileType: csvFile.name,
+          fileName: file.name,
+          status: "success",
+          message: data?.message || `Datos actualizados correctamente`,
+          recordsProcessed: data?.stats,
+        });
+
+        toast.success(`${file.name} procesado exitosamente`, {
+          description: data?.message || `Se actualizaron los datos de ${csvFile.name}`,
+        });
+
+        return true;
+      } catch (error) {
+        console.error("Error uploading CSV:", error);
+
+        setCsvFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f)));
+
+        // Add to history
+        addToHistory({
+          fileType: csvFile.name,
+          fileName: file.name,
+          status: "error",
+          message: error instanceof Error ? error.message : "Error desconocido",
+        });
+
+        toast.error(`Error al procesar ${file.name}`, {
+          description: error instanceof Error ? error.message : "Error desconocido",
+        });
+
+        return false;
+      }
+    },
+    [csvFiles, addToHistory],
+  );
 
   const handleDrop = (fileId: string, e: React.DragEvent) => {
     e.preventDefault();
@@ -224,7 +202,7 @@ export default function CsvUpload() {
   const handleBulkUpload = async (files: FileList) => {
     setIsBulkUploading(true);
     const fileArray = Array.from(files);
-    
+
     for (let i = 0; i < fileArray.length; i++) {
       const file = fileArray[i];
       setBulkProgress({
@@ -235,17 +213,19 @@ export default function CsvUpload() {
 
       // Try to match file name to a csv type
       const matchedType = csvFiles.find((csvFile) => {
-        const normalizedFileName = file.name.toLowerCase().replace(/[_\-\s]/g, '');
-        const normalizedTypeName = csvFile.name.toLowerCase().replace(/[_\-\s]/g, '');
-        return normalizedFileName.includes(normalizedTypeName) || 
-               normalizedTypeName.includes(normalizedFileName.replace('.csv', ''));
+        const normalizedFileName = file.name.toLowerCase().replace(/[_\-\s]/g, "");
+        const normalizedTypeName = csvFile.name.toLowerCase().replace(/[_\-\s]/g, "");
+        return (
+          normalizedFileName.includes(normalizedTypeName) ||
+          normalizedTypeName.includes(normalizedFileName.replace(".csv", ""))
+        );
       });
 
       if (matchedType) {
         await handleFileUpload(matchedType.id, file);
       } else {
         // Try the first available idle type
-        const firstIdle = csvFiles.find(f => f.status === "idle");
+        const firstIdle = csvFiles.find((f) => f.status === "idle");
         if (firstIdle) {
           toast.warning(`"${file.name}" no coincide con ningún tipo conocido`, {
             description: `Se asignó automáticamente a "${firstIdle.name}"`,
@@ -278,20 +258,20 @@ export default function CsvUpload() {
   const handleRefreshDashboard = async () => {
     if (!uploadStatus.allLoaded) {
       toast.error("Faltan archivos por cargar", {
-        description: `Archivos pendientes: ${uploadStatus.missingFiles.map(f => f.name).join(", ")}`,
+        description: `Archivos pendientes: ${uploadStatus.missingFiles.map((f) => f.name).join(", ")}`,
       });
       return;
     }
 
     setIsRefreshingDashboard(true);
     try {
-      const { data, error } = await supabase.functions.invoke('refresh-dashboard');
-      
+      const { data, error } = await supabase.functions.invoke("refresh-dashboard");
+
       if (error) throw error;
-      
+
       // Resetear el estado de todos los archivos para un nuevo ciclo de carga
       setCsvFiles(initialCsvFiles);
-      
+
       // Agregar entrada al historial para el refresh del dashboard
       const dashboardHistoryEntry: UploadHistoryEntry = {
         id: Date.now().toString(),
@@ -302,8 +282,8 @@ export default function CsvUpload() {
         message: data?.message || "Dashboard actualizado",
         recordsProcessed: data?.results?.filter((r: any) => r.success).length || 0,
       };
-      setUploadHistory(prev => [dashboardHistoryEntry, ...prev]);
-      
+      setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
+
       if (data?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
           description: "Los archivos fueron procesados. Podés comenzar un nuevo ciclo de carga.",
@@ -312,15 +292,15 @@ export default function CsvUpload() {
         const failedViews = data?.results?.filter((r: any) => !r.success) || [];
         if (failedViews.length > 0) {
           toast.warning(`Dashboard actualizado con advertencias`, {
-            description: `Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(', ')}`,
+            description: `Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(", ")}`,
           });
         } else {
           toast.success("Dashboard actualizado - Nuevo ciclo iniciado");
         }
       }
     } catch (error) {
-      console.error('Error refreshing dashboard:', error);
-      toast.error('Error al conectar con el servidor');
+      console.error("Error refreshing dashboard:", error);
+      toast.error("Error al conectar con el servidor");
     } finally {
       setIsRefreshingDashboard(false);
     }
@@ -334,13 +314,13 @@ export default function CsvUpload() {
           <Upload className="w-7 h-7 text-primary" />
           Carga de CSV
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Sube los archivos CSV para actualizar los datos del tablero
-        </p>
+        <p className="text-muted-foreground mt-1">Sube los archivos CSV para actualizar los datos del tablero</p>
       </div>
 
       {/* Status Card + Refresh Button */}
-      <Card className={`mb-6 ${uploadStatus.allLoaded ? 'border-success/50 bg-success/5' : 'border-warning/50 bg-warning/5'}`}>
+      <Card
+        className={`mb-6 ${uploadStatus.allLoaded ? "border-success/50 bg-success/5" : "border-warning/50 bg-warning/5"}`}
+      >
         <CardContent className="py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -356,7 +336,7 @@ export default function CsvUpload() {
                 {!uploadStatus.allLoaded && (
                   <p className="text-sm text-muted-foreground mt-1">
                     <span className="font-medium">Faltan:</span>{" "}
-                    {uploadStatus.missingFiles.map(f => f.name).join(", ")}
+                    {uploadStatus.missingFiles.map((f) => f.name).join(", ")}
                   </p>
                 )}
                 {uploadStatus.allLoaded && (
@@ -366,14 +346,14 @@ export default function CsvUpload() {
                 )}
               </div>
             </div>
-            <Button 
+            <Button
               onClick={handleRefreshDashboard}
               disabled={!uploadStatus.allLoaded || isRefreshingDashboard}
               className="gap-2 shrink-0"
               variant={uploadStatus.allLoaded ? "default" : "secondary"}
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshingDashboard ? 'animate-spin' : ''}`} />
-              {isRefreshingDashboard ? 'Actualizando...' : 'Actualizar Dashboard'}
+              <RefreshCw className={`w-4 h-4 ${isRefreshingDashboard ? "animate-spin" : ""}`} />
+              {isRefreshingDashboard ? "Actualizando..." : "Actualizar Dashboard"}
             </Button>
           </div>
         </CardContent>
@@ -386,8 +366,8 @@ export default function CsvUpload() {
           <div>
             <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Descarga los archivos CSV desde tu sistema de gestión y súbelos aquí. 
-              Una vez cargados los 5 archivos, podrás actualizar el dashboard con los nuevos datos.
+              Descarga los archivos CSV desde SIAP y súbelos aquí. Una vez cargados los 5 archivos, podrás actualizar el
+              dashboard con los nuevos datos.
             </p>
           </div>
         </CardContent>
@@ -421,10 +401,7 @@ export default function CsvUpload() {
 
       {/* Upload History - Below cards */}
       <div className="mt-6">
-        <UploadHistory 
-          history={uploadHistory} 
-          onClearHistory={handleClearHistory} 
-        />
+        <UploadHistory history={uploadHistory} onClearHistory={handleClearHistory} />
       </div>
     </div>
   );
