@@ -65,59 +65,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create user using admin API with email confirmation required
-    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: false, // User must confirm email
-      user_metadata: {
-        full_name: fullName || email,
-      },
-    });
+    // IMPORTANT:
+    // - Do NOT call createUser() before inviteUserByEmail(); that causes "already registered".
+    // - Do NOT fallback to resetPasswordForEmail(); that double-sends and quickly hits rate limits.
 
-    if (createError) {
-      console.error("Create user error:", createError);
+    const origin = req.headers.get("origin") ?? "https://gfigueroa.lovable.app";
+    const redirectTo = origin; // keep it simple; the app can route from the root
+
+    // Invite user using Supabase's built-in email (creates user if needed)
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+      email,
+      {
+        redirectTo,
+        data: {
+          full_name: fullName || email,
+        },
+      }
+    );
+
+    if (inviteError) {
+      console.error("Invite email error:", inviteError);
+
+      // Give more accurate status codes for the frontend UX
+      const status = (inviteError as any)?.status ?? 400;
       return new Response(
-        JSON.stringify({ success: false, error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: inviteError.message, code: (inviteError as any)?.code }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // If role is admin, update the user_roles table
-    if (role === "admin" && userData.user) {
-      // Wait a moment for the trigger to create the profile and role
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+    // If role is admin, update the user_roles table for the invited user
+    if (role === "admin" && inviteData?.user) {
+      // Wait a moment for triggers to create profile/role rows
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const { error: roleError } = await supabaseAdmin
         .from("user_roles")
         .update({ role: "admin" })
-        .eq("user_id", userData.user.id);
+        .eq("user_id", inviteData.user.id);
 
       if (roleError) {
         console.error("Role update error:", roleError);
       }
     }
 
-    // Send invite email using Supabase's built-in email
-    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://id-preview--3a86ef41-ba39-4b90-94a6-16ffe456eee8.lovable.app/",
-    });
-
-    if (inviteError) {
-      console.error("Invite email error:", inviteError);
-      // User was created, try magic link as fallback
-      const { error: linkError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://id-preview--3a86ef41-ba39-4b90-94a6-16ffe456eee8.lovable.app/",
-      });
-      
-      if (linkError) {
-        console.error("Reset password email error:", linkError);
-      }
-    }
-
-    console.log("User created and invite sent:", userData.user?.id);
+    console.log("Invite sent (Supabase):", inviteData?.user?.id, "redirectTo:", redirectTo);
 
     return new Response(
-      JSON.stringify({ success: true, user: userData.user }),
+      JSON.stringify({ success: true, user: inviteData?.user, emailSent: true, redirectTo }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
