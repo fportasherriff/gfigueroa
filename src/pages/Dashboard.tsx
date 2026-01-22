@@ -1,18 +1,59 @@
-import { LayoutDashboard, Construction } from "lucide-react";
+import { LayoutDashboard, Construction, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Dashboard() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshDashboard = async () => {
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refresh-dashboard');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(data.message || 'Dashboard actualizado correctamente');
+      } else {
+        const failedViews = data?.results?.filter((r: any) => !r.success) || [];
+        if (failedViews.length > 0) {
+          toast.warning(`Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(', ')}`);
+        } else {
+          toast.error('Error al actualizar el dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 animate-fade-in">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-3">
-          <LayoutDashboard className="w-7 h-7 text-primary" />
-          Tablero Principal
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Visualización de métricas y KPIs de la clínica
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground flex items-center gap-3">
+            <LayoutDashboard className="w-7 h-7 text-primary" />
+            Tablero Principal
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Visualización de métricas y KPIs de la clínica
+          </p>
+        </div>
+        <Button 
+          onClick={handleRefreshDashboard}
+          disabled={isRefreshing}
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Actualizando...' : 'Actualizar Dashboard'}
+        </Button>
       </div>
 
       {/* In Progress State */}
