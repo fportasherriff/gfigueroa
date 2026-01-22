@@ -58,6 +58,11 @@ export default function UserManagement() {
   const [isSavingName, setIsSavingName] = useState(false);
   const [editFullName, setEditFullName] = useState("");
   const [editError, setEditError] = useState("");
+  const [inviteCooldownUntil, setInviteCooldownUntil] = useState<number | null>(null);
+
+  const inviteCooldownRemaining = inviteCooldownUntil
+    ? Math.max(0, Math.ceil((inviteCooldownUntil - Date.now()) / 1000))
+    : 0;
   
   // New user form
   const [newEmail, setNewEmail] = useState("");
@@ -130,6 +135,8 @@ export default function UserManagement() {
           errorMessage.includes("429")
         ) {
           setFormError("Límite de envío de emails alcanzado. Esperá unos minutos e intentá de nuevo.");
+          // Prevent hammering the endpoint (helps UX + avoids repeated 429s)
+          setInviteCooldownUntil(Date.now() + 60_000);
         } else if (errorMessage.includes("already") || errorMessage.includes("registered")) {
           setFormError("Este email ya está registrado en el sistema");
         } else {
@@ -146,6 +153,7 @@ export default function UserManagement() {
           errorMessage.includes("over_email_send_rate_limit")
         ) {
           setFormError("Límite de envío de emails alcanzado. Esperá unos minutos e intentá de nuevo.");
+          setInviteCooldownUntil(Date.now() + 60_000);
         } else if (errorMessage.includes("already") || errorMessage.includes("registered")) {
           setFormError("Este email ya está registrado en el sistema");
         } else {
@@ -354,9 +362,9 @@ export default function UserManagement() {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddUser} disabled={isSubmitting}>
+              <Button onClick={handleAddUser} disabled={isSubmitting || inviteCooldownRemaining > 0}>
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                Crear Usuario
+                {inviteCooldownRemaining > 0 ? `Reintentar en ${inviteCooldownRemaining}s` : "Enviar invitación"}
               </Button>
             </DialogFooter>
           </DialogContent>
