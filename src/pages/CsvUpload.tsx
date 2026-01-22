@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
-import { Upload, Info } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { Upload, Info, RefreshCw, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CsvFile, UploadHistoryEntry } from "@/types/csv";
@@ -61,6 +62,20 @@ export default function CsvUpload() {
     total: number;
     currentFile: string;
   } | null>(null);
+  const [isRefreshingDashboard, setIsRefreshingDashboard] = useState(false);
+
+  // Calcular cuáles archivos están cargados exitosamente
+  const uploadStatus = useMemo(() => {
+    const loaded = csvFiles.filter(f => f.status === "success");
+    const missing = csvFiles.filter(f => f.status !== "success");
+    return {
+      loadedCount: loaded.length,
+      totalCount: csvFiles.length,
+      allLoaded: loaded.length === csvFiles.length,
+      missingFiles: missing,
+      loadedFiles: loaded,
+    };
+  }, [csvFiles]);
 
   const addToHistory = useCallback((entry: Omit<UploadHistoryEntry, "id" | "timestamp">) => {
     const newEntry: UploadHistoryEntry = {
@@ -262,6 +277,42 @@ export default function CsvUpload() {
     toast.info("Historial limpiado");
   };
 
+  const handleRefreshDashboard = async () => {
+    if (!uploadStatus.allLoaded) {
+      toast.error("Faltan archivos por cargar", {
+        description: `Archivos pendientes: ${uploadStatus.missingFiles.map(f => f.name).join(", ")}`,
+      });
+      return;
+    }
+
+    setIsRefreshingDashboard(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refresh-dashboard');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success("Dashboard actualizado correctamente", {
+          description: data.message,
+        });
+      } else {
+        const failedViews = data?.results?.filter((r: any) => !r.success) || [];
+        if (failedViews.length > 0) {
+          toast.warning(`Algunas vistas no se actualizaron`, {
+            description: failedViews.map((v: any) => v.view).join(', '),
+          });
+        } else {
+          toast.error('Error al actualizar el dashboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setIsRefreshingDashboard(false);
+    }
+  };
+
   return (
     <div className="p-6 lg:p-8 animate-fade-in">
       {/* Header */}
@@ -275,6 +326,46 @@ export default function CsvUpload() {
         </p>
       </div>
 
+      {/* Status Card + Refresh Button */}
+      <Card className={`mb-6 ${uploadStatus.allLoaded ? 'border-success/50 bg-success/5' : 'border-warning/50 bg-warning/5'}`}>
+        <CardContent className="py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              {uploadStatus.allLoaded ? (
+                <CheckCircle2 className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Estado de carga: {uploadStatus.loadedCount}/{uploadStatus.totalCount} archivos
+                </p>
+                {!uploadStatus.allLoaded && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <span className="font-medium">Faltan:</span>{" "}
+                    {uploadStatus.missingFiles.map(f => f.name).join(", ")}
+                  </p>
+                )}
+                {uploadStatus.allLoaded && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Todos los archivos fueron cargados. Podés actualizar el dashboard.
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button 
+              onClick={handleRefreshDashboard}
+              disabled={!uploadStatus.allLoaded || isRefreshingDashboard}
+              className="gap-2 shrink-0"
+              variant={uploadStatus.allLoaded ? "default" : "secondary"}
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshingDashboard ? 'animate-spin' : ''}`} />
+              {isRefreshingDashboard ? 'Actualizando...' : 'Actualizar Dashboard'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Info Banner */}
       <Card className="mb-6 border-info/30 bg-info/5">
         <CardContent className="py-4 flex items-start gap-3">
@@ -283,8 +374,7 @@ export default function CsvUpload() {
             <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
             <p className="text-sm text-muted-foreground mt-1">
               Descarga los archivos CSV desde tu sistema de gestión y súbelos aquí. 
-              Cada archivo actualizará automáticamente las tablas correspondientes en la base de datos 
-              y refrescará las vistas materializadas del tablero.
+              Una vez cargados los 5 archivos, podrás actualizar el dashboard con los nuevos datos.
             </p>
           </div>
         </CardContent>
