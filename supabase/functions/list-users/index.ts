@@ -31,20 +31,23 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseAdmin.auth.getClaims(token);
     
-    if (authError || !requestingUser) {
+    if (claimsError || !claimsData?.claims) {
+      console.error("Claims error:", claimsError);
       return new Response(
         JSON.stringify({ success: false, error: "Token inválido" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    const requestingUserId = claimsData.claims.sub;
 
     // Check if requesting user is admin
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUser.id)
+      .eq("user_id", requestingUserId)
       .single();
 
     if (roleData?.role !== "admin") {
