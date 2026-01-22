@@ -30,11 +30,36 @@ interface UserProfile {
   id: string;
   user_id: string;
   full_name: string | null;
+  email: string;
   is_active: boolean;
   created_at: string;
   role: "admin" | "user";
-  email?: string;
 }
+
+// Helper to get initials from name
+const getInitials = (name: string | null, email: string): string => {
+  if (name && name.trim()) {
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return email.substring(0, 2).toUpperCase();
+};
+
+// Helper to generate consistent color from string
+const getAvatarColor = (str: string): string => {
+  const colors = [
+    "bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500",
+    "bg-pink-500", "bg-teal-500", "bg-indigo-500", "bg-cyan-500"
+  ];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -75,31 +100,13 @@ export default function UserManagement() {
     try {
       setLoading(true);
       
-      // Get profiles with roles
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Get users via edge function (includes emails from auth.users)
+      const { data, error } = await supabase.functions.invoke("list-users");
 
-      if (profilesError) throw profilesError;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Error al cargar usuarios");
 
-      // Get roles for all users
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("*");
-
-      if (rolesError) throw rolesError;
-
-      // Combine profiles with roles
-      const usersWithRoles: UserProfile[] = (profiles || []).map((profile) => {
-        const userRole = roles?.find((r) => r.user_id === profile.user_id);
-        return {
-          ...profile,
-          role: userRole?.role || "user",
-        };
-      });
-
-      setUsers(usersWithRoles);
+      setUsers(data.users);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Error al cargar usuarios");
@@ -205,7 +212,7 @@ export default function UserManagement() {
 
   const filteredUsers = users.filter((u) => 
     u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.user_id.toLowerCase().includes(searchTerm.toLowerCase())
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (authLoading || loading) {
@@ -334,10 +341,10 @@ export default function UserManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Fecha de registro</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -352,22 +359,34 @@ export default function UserManagement() {
                 filteredUsers.map((userProfile) => (
                   <TableRow key={userProfile.id}>
                     <TableCell>
-                      <p className="font-medium">
-                        {userProfile.full_name || "Sin nombre"}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full ${getAvatarColor(userProfile.email)} flex items-center justify-center text-white font-medium text-sm`}>
+                          {getInitials(userProfile.full_name, userProfile.email)}
+                        </div>
+                        <span className="font-medium">
+                          {userProfile.full_name || "Sin nombre"}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={userProfile.role === "admin" ? "default" : "secondary"}
-                        className="flex items-center gap-1 w-fit"
+                      <span className="text-muted-foreground">
+                        {userProfile.email}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={userProfile.role}
+                        onValueChange={(v) => handleUpdateRole(userProfile, v as "admin" | "user")}
+                        disabled={userProfile.user_id === user?.id}
                       >
-                        {userProfile.role === "admin" ? (
-                          <ShieldCheck className="w-3 h-3" />
-                        ) : (
-                          <Shield className="w-3 h-3" />
-                        )}
-                        {userProfile.role === "admin" ? "Admin" : "Usuario"}
-                      </Badge>
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">Usuario</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -376,54 +395,24 @@ export default function UserManagement() {
                           onCheckedChange={() => handleToggleActive(userProfile)}
                           disabled={userProfile.user_id === user?.id}
                         />
-                        <span className={userProfile.is_active ? "text-success" : "text-muted-foreground"}>
+                        <span className={userProfile.is_active ? "text-green-600" : "text-orange-500"}>
                           {userProfile.is_active ? "Activo" : "Inactivo"}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {new Date(userProfile.created_at).toLocaleDateString("es-AR", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedUser(userProfile);
-                              setIsEditDialogOpen(true);
-                            }}
-                            disabled={userProfile.user_id === user?.id}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Cambiar rol
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleToggleActive(userProfile)}
-                            disabled={userProfile.user_id === user?.id}
-                          >
-                            {userProfile.is_active ? (
-                              <>
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Desactivar
-                              </>
-                            ) : (
-                              <>
-                                <Shield className="w-4 h-4 mr-2" />
-                                Activar
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(userProfile);
+                          setIsEditDialogOpen(true);
+                        }}
+                        disabled={userProfile.user_id === user?.id}
+                        className="text-primary hover:text-primary/80"
+                      >
+                        Editar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
