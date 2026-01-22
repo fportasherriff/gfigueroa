@@ -26,13 +26,19 @@ const App = () => (
             {/* Public route */}
             <Route path="/auth" element={<Auth />} />
             
-            {/* Protected routes */}
+            {/* Protected routes - authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/csv-upload" element={<CsvUpload />} />
                 <Route path="/soporte" element={<Support />} />
-                <Route path="/usuarios" element={<UserManagement />} />
+              </Route>
+            </Route>
+            
+            {/* Admin-only routes */}
+            <Route element={<ProtectedRoute requireAdmin />}>
+              <Route element={<AppLayout />}>
+                <Route path="/accesos" element={<UserManagement />} />
               </Route>
             </Route>
             
