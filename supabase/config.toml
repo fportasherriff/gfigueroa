@@ -1,1 +1,7 @@
 project_id = "ehpmvahaixellqfwwyam"
+
+[functions.process-csv-upload]
+verify_jwt = false
+
+[functions.refresh-dashboard]
+verify_jwt = false

@@ -41,23 +41,23 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
   'listado_clientes': {
     label: 'Listado Clientes',
     required: true,
-    // Columnas únicas para clientes: DNI, Celular, EMail
-    signatureColumns: ['DNI', 'Celular', 'EMail'],
-    allColumns: ['ID', 'Apellido y Nombre', 'Fecha', 'DNI', 'Estado', 'Telefono', 'Celular', 'EMail', 'Origen', 'Sucursal']
+    // Columnas únicas: Tipo de Alta, Nacimiento, Género
+    signatureColumns: ['Tipo de Alta', 'Nacimiento', 'Género'],
+    allColumns: ['ID', 'Fecha', 'Apellido y Nombre', 'Tipo de Alta', 'DNI', 'Nacimiento', 'Género', 'Pais', 'Telefono Pais', 'Telefono', 'Celular Pais', 'Celular', 'EMail', 'Direccion', 'Codigo Postal', 'Ciudad', 'Barrio', 'Referente', 'Operador', 'Origen', 'Grupo', 'Sucursal', 'Ultimo Contacto', 'Ejecutivo', 'Obra Social', 'Número de afiliado', 'Estado']
   },
   'leads': {
     label: 'Leads',
     required: true,
-    // Columnas únicas: Origen, Fecha Ingreso, Comentarios
-    signatureColumns: ['Origen', 'Fecha Ingreso', 'Comentarios'],
-    allColumns: ['Nombre', 'Telefono', 'Email', 'Origen', 'Fecha Ingreso', 'Estado', 'Comentarios', 'Sucursal']
+    // Columnas únicas: Ultimo Seguimiento, E-Mail (con guion), Nombres (plural)
+    signatureColumns: ['Ultimo Seguimiento', 'E-Mail', 'Nombres'],
+    allColumns: ['Cliente', 'Apellido', 'Nombres', 'E-Mail', 'Alta', 'Sucursal', 'Origen', 'Ultimo Seguimiento', 'Ultimo Contacto']
   },
   'saldos': {
     label: 'Saldos',
     required: true,
-    // Columnas únicas: Saldo, Fecha Ultimo Movimiento
-    signatureColumns: ['Saldo', 'Fecha Ultimo Movimiento'],
-    allColumns: ['Cliente', 'Saldo', 'Fecha Ultimo Movimiento', 'Tipo', 'Sucursal']
+    // Columnas únicas: NroCliente, Proximo Turno, TQP
+    signatureColumns: ['NroCliente', 'Proximo Turno', 'TQP'],
+    allColumns: ['NroCliente', 'Cliente', 'Saldo', 'TQP', 'Proximo Turno']
   }
 }
 
