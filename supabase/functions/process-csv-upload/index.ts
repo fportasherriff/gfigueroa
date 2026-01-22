@@ -243,16 +243,19 @@ serve(async (req: Request) => {
 
     console.log(`Parsed ${parsedRows.length} rows. Starting database operations for table: ${detectedType}`);
 
-    // Step 1: Delete all existing records (snapshot replacement strategy)
-    // En PostgREST se requiere algún filtro para delete(). Usamos una columna
-    // "siempre presente" por tabla (primer campo esperado) para borrar todo.
-    const deleteFilterColumn = tableConfig.allColumns[0];
+    // Helper para escapar valores SQL
+    const escapeValue = (val: string | null): string => {
+      if (val === null) return 'NULL';
+      return `'${val.replace(/'/g, "''")}'`;
+    };
 
-    const { error: deleteError } = await supabase
-      .schema('raw')
-      .from(detectedType)
-      .delete()
-      .not(deleteFilterColumn, 'is', null);
+    // Step 1: Delete all existing records usando execute_sql RPC
+    const deleteQuery = `DELETE FROM raw.${detectedType}`;
+    console.log(`Executing delete: ${deleteQuery}`);
+    
+    const { error: deleteError } = await supabase.rpc('execute_sql', { 
+      query: deleteQuery 
+    });
 
     if (deleteError) {
       console.error(`Error deleting from ${detectedType}:`, deleteError);
@@ -271,25 +274,34 @@ serve(async (req: Request) => {
 
     console.log(`Deleted existing records from ${detectedType}. Inserting ${parsedRows.length} new rows...`);
 
-    // Step 2: Insert new records in batches to avoid payload limits
-    const BATCH_SIZE = 500;
+    // Step 2: Insert new records in batches usando execute_sql RPC
+    const BATCH_SIZE = 100; // Reducido para evitar queries muy largas
     let totalInserted = 0;
     const errors: string[] = [];
+
+    // Obtener las columnas que realmente tenemos datos
+    const columnsToInsert = tableConfig.allColumns;
+    const quotedColumns = columnsToInsert.map(c => `"${c}"`).join(', ');
 
     for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
       const batch = parsedRows.slice(i, i + BATCH_SIZE);
       
-       const { error: insertError, data: insertedData } = await supabase
-         .schema('raw')
-         .from(detectedType)
-        .insert(batch)
-        .select();
+      const valueRows = batch.map(row => {
+        const values = columnsToInsert.map(col => escapeValue(row[col] ?? null));
+        return `(${values.join(', ')})`;
+      }).join(',\n');
+
+      const insertQuery = `INSERT INTO raw.${detectedType} (${quotedColumns}) VALUES ${valueRows}`;
+      
+      const { error: insertError } = await supabase.rpc('execute_sql', { 
+        query: insertQuery 
+      });
 
       if (insertError) {
         console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertError);
         errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertError.message}`);
       } else {
-        totalInserted += insertedData?.length || batch.length;
+        totalInserted += batch.length;
       }
     }
 
