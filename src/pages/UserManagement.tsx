@@ -50,7 +50,6 @@ export default function UserManagement() {
   
   // New user form
   const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [newFullName, setNewFullName] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "user">("user");
   const [formError, setFormError] = useState("");
@@ -112,55 +111,36 @@ export default function UserManagement() {
   const handleAddUser = async () => {
     setFormError("");
 
-    if (!newEmail || !newPassword) {
-      setFormError("Email y contraseña son requeridos");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setFormError("La contraseña debe tener al menos 6 caracteres");
+    if (!newEmail) {
+      setFormError("El email es requerido");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Create user via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: newFullName,
-          },
+      // Invite user via edge function (uses admin API)
+      const { data, error } = await supabase.functions.invoke("invite-user", {
+        body: {
+          email: newEmail,
+          fullName: newFullName,
+          role: newRole,
         },
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Error al invitar usuario");
 
-      if (authData.user) {
-        // Update role if admin was selected (trigger creates user role by default)
-        if (newRole === "admin") {
-          const { error: roleError } = await supabase
-            .from("user_roles")
-            .update({ role: "admin" })
-            .eq("user_id", authData.user.id);
-
-          if (roleError) throw roleError;
-        }
-
-        toast.success("Usuario creado exitosamente");
-        setIsAddDialogOpen(false);
-        resetForm();
-        fetchUsers();
-      }
+      toast.success("Invitación enviada exitosamente");
+      setIsAddDialogOpen(false);
+      resetForm();
+      fetchUsers();
     } catch (error: any) {
-      console.error("Error creating user:", error);
-      if (error.message?.includes("already registered")) {
+      console.error("Error inviting user:", error);
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
         setFormError("Este email ya está registrado");
       } else {
-        setFormError(error.message || "Error al crear usuario");
+        setFormError(error.message || "Error al invitar usuario");
       }
     } finally {
       setIsSubmitting(false);
@@ -218,7 +198,6 @@ export default function UserManagement() {
 
   const resetForm = () => {
     setNewEmail("");
-    setNewPassword("");
     setNewFullName("");
     setNewRole("user");
     setFormError("");
@@ -292,21 +271,6 @@ export default function UserManagement() {
                   onChange={(e) => setNewEmail(e.target.value)}
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Contraseña *</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 6 caracteres
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -388,14 +352,9 @@ export default function UserManagement() {
                 filteredUsers.map((userProfile) => (
                   <TableRow key={userProfile.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {userProfile.full_name || "Sin nombre"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {userProfile.user_id.slice(0, 8)}...
-                        </p>
-                      </div>
+                      <p className="font-medium">
+                        {userProfile.full_name || "Sin nombre"}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <Badge
