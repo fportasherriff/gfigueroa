@@ -218,36 +218,41 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Helper to convert header names to snake_case column names
-    const toSnakeCase = (str: string): string => {
-      return str
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    };
+    // En este proyecto, las tablas existen en el schema "raw" y las columnas
+    // conservan los nombres originales del CSV (con espacios, puntos, etc.).
+    // Por eso, NO convertimos a snake_case; insertamos usando los nombres exactos.
+    const normalizeCol = (s: string) => s.trim().toLowerCase();
+    const allowedColumnMap = new Map<string, string>(
+      tableConfig.allColumns.map((c) => [normalizeCol(c), c])
+    );
 
     const parsedRows = dataRows.map((line: string) => {
       const values = parseCSVLine(line, delimiter);
       const row: Record<string, string | null> = {};
-      
+
       headers.forEach((header: string, i: number) => {
-        const columnName = toSnakeCase(header);
+        const mappedColumn = allowedColumnMap.get(normalizeCol(header));
+        if (!mappedColumn) return; // ignorar columnas no esperadas
+
         const value = values[i]?.trim() || null;
-        row[columnName] = value === '' ? null : value;
+        row[mappedColumn] = value === '' ? null : value;
       });
-      
+
       return row;
     });
 
     console.log(`Parsed ${parsedRows.length} rows. Starting database operations for table: ${detectedType}`);
 
     // Step 1: Delete all existing records (snapshot replacement strategy)
+    // En PostgREST se requiere algún filtro para delete(). Usamos una columna
+    // "siempre presente" por tabla (primer campo esperado) para borrar todo.
+    const deleteFilterColumn = tableConfig.allColumns[0];
+
     const { error: deleteError } = await supabase
+      .schema('raw')
       .from(detectedType)
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows (workaround for "delete all")
+      .not(deleteFilterColumn, 'is', null);
 
     if (deleteError) {
       console.error(`Error deleting from ${detectedType}:`, deleteError);
@@ -274,8 +279,9 @@ serve(async (req: Request) => {
     for (let i = 0; i < parsedRows.length; i += BATCH_SIZE) {
       const batch = parsedRows.slice(i, i + BATCH_SIZE);
       
-      const { error: insertError, data: insertedData } = await supabase
-        .from(detectedType)
+       const { error: insertError, data: insertedData } = await supabase
+         .schema('raw')
+         .from(detectedType)
         .insert(batch)
         .select();
 
