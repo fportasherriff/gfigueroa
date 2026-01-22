@@ -40,8 +40,8 @@ const navItems: NavItem[] = [
     icon: LifeBuoy,
   },
   {
-    title: "Usuarios",
-    href: "/usuarios",
+    title: "Accesos",
+    href: "/accesos",
     icon: Users,
     adminOnly: true,
   },

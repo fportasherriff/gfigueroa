@@ -243,10 +243,10 @@ export default function UserManagement() {
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="w-7 h-7 text-primary" />
-            Gestión de Usuarios
+            Accesos
           </h1>
           <p className="text-muted-foreground mt-1">
-            Administra los accesos y permisos de usuarios
+            Gestión de usuarios y permisos del sistema
           </p>
         </div>
 
@@ -254,14 +254,14 @@ export default function UserManagement() {
           <DialogTrigger asChild>
             <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
               <UserPlus className="w-4 h-4 mr-2" />
-              Agregar Usuario
+              Invitar Usuario
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Agregar Nuevo Usuario</DialogTitle>
+              <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
               <DialogDescription>
-                Crea una nueva cuenta de usuario para el sistema
+                Envía una invitación por email para acceder al sistema
               </DialogDescription>
             </DialogHeader>
 
