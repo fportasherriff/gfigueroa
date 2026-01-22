@@ -135,8 +135,27 @@ export default function UserManagement() {
         },
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Error al invitar usuario");
+      // Handle edge function errors (non-2xx responses)
+      if (error) {
+        const errorMessage = error.message || "Error al invitar usuario";
+        if (errorMessage.includes("already") || errorMessage.includes("registered")) {
+          setFormError("Este email ya está registrado en el sistema");
+        } else {
+          setFormError(errorMessage);
+        }
+        return;
+      }
+
+      // Handle application-level errors from the response
+      if (!data?.success) {
+        const errorMessage = data?.error || "Error al invitar usuario";
+        if (errorMessage.includes("already") || errorMessage.includes("registered")) {
+          setFormError("Este email ya está registrado en el sistema");
+        } else {
+          setFormError(errorMessage);
+        }
+        return;
+      }
 
       toast.success("Invitación enviada exitosamente");
       setIsAddDialogOpen(false);
@@ -144,11 +163,7 @@ export default function UserManagement() {
       fetchUsers();
     } catch (error: any) {
       console.error("Error inviting user:", error);
-      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
-        setFormError("Este email ya está registrado");
-      } else {
-        setFormError(error.message || "Error al invitar usuario");
-      }
+      setFormError(error.message || "Error al invitar usuario");
     } finally {
       setIsSubmitting(false);
     }
