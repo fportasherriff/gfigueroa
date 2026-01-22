@@ -253,17 +253,35 @@ serve(async (req: Request) => {
     const deleteQuery = `DELETE FROM raw.${detectedType}`;
     console.log(`Executing delete: ${deleteQuery}`);
     
-    const { error: deleteError } = await supabase.rpc('execute_sql', { 
+    const { data: deleteResult, error: deleteError } = await supabase.rpc('execute_sql', { 
       query: deleteQuery 
     });
 
+    console.log(`Delete result:`, JSON.stringify(deleteResult));
+
     if (deleteError) {
-      console.error(`Error deleting from ${detectedType}:`, deleteError);
+      console.error(`Error calling RPC for ${detectedType}:`, deleteError);
       return new Response(
         JSON.stringify({
           success: false,
           stage: 'delete',
           errors: [`Error al limpiar tabla ${tableConfig.label}: ${deleteError.message}`],
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Verificar el resultado de execute_sql (devuelve {success: bool, error?: string})
+    if (deleteResult && deleteResult.success === false) {
+      console.error(`SQL error deleting from ${detectedType}:`, deleteResult.error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          stage: 'delete',
+          errors: [`Error SQL al limpiar tabla ${tableConfig.label}: ${deleteResult.error}`],
         }),
         { 
           status: 500, 
@@ -293,13 +311,18 @@ serve(async (req: Request) => {
 
       const insertQuery = `INSERT INTO raw.${detectedType} (${quotedColumns}) VALUES ${valueRows}`;
       
-      const { error: insertError } = await supabase.rpc('execute_sql', { 
+      const { data: insertResult, error: insertError } = await supabase.rpc('execute_sql', { 
         query: insertQuery 
       });
+
+      console.log(`Insert batch ${Math.floor(i / BATCH_SIZE) + 1} result:`, JSON.stringify(insertResult));
 
       if (insertError) {
         console.error(`Error inserting batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertError);
         errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertError.message}`);
+      } else if (insertResult && insertResult.success === false) {
+        console.error(`SQL error in batch ${Math.floor(i / BATCH_SIZE) + 1}:`, insertResult.error);
+        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${insertResult.error}`);
       } else {
         totalInserted += batch.length;
       }
