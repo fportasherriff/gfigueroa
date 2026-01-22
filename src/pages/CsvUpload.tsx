@@ -291,7 +291,18 @@ export default function CsvUpload() {
       
       // Resetear el estado de todos los archivos para un nuevo ciclo de carga
       setCsvFiles(initialCsvFiles);
-      setUploadHistory([]);
+      
+      // Agregar entrada al historial para el refresh del dashboard
+      const dashboardHistoryEntry: UploadHistoryEntry = {
+        id: Date.now().toString(),
+        fileName: "Actualización Dashboard",
+        fileType: "dashboard_refresh",
+        status: data?.success ? "success" : "error",
+        timestamp: new Date(),
+        message: data?.message || "Dashboard actualizado",
+        recordsProcessed: data?.results?.filter((r: any) => r.success).length || 0,
+      };
+      setUploadHistory(prev => [dashboardHistoryEntry, ...prev]);
       
       if (data?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
