@@ -72,8 +72,15 @@ function detectTableType(headers: string[]): string | null {
   return null;
 }
 
+// Función para detectar el delimitador del CSV (coma o punto y coma)
+function detectDelimiter(headerLine: string): string {
+  const semicolonCount = (headerLine.match(/;/g) || []).length;
+  const commaCount = (headerLine.match(/,/g) || []).length;
+  return semicolonCount > commaCount ? ';' : ',';
+}
+
 // Función para parsear una línea CSV respetando comillas
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, delimiter: string = ','): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -83,7 +90,7 @@ function parseCSVLine(line: string): string[] {
     
     if (char === '"') {
       inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       result.push(current.trim());
       current = '';
     } else {
@@ -134,7 +141,11 @@ serve(async (req: Request) => {
       );
     }
 
-    const headers = parseCSVLine(lines[0]);
+    // Detectar delimitador automáticamente
+    const delimiter = detectDelimiter(lines[0]);
+    console.log(`Detected delimiter: "${delimiter}"`);
+
+    const headers = parseCSVLine(lines[0], delimiter);
     const dataRows = lines.slice(1).filter((line: string) => line.trim() !== '');
 
     console.log(`CSV has ${dataRows.length} data rows and ${headers.length} columns`);
@@ -178,7 +189,7 @@ serve(async (req: Request) => {
     };
 
     const parsedRows = dataRows.map((line: string) => {
-      const values = parseCSVLine(line);
+      const values = parseCSVLine(line, delimiter);
       const row: Record<string, string | null> = {};
       
       headers.forEach((header: string, i: number) => {
