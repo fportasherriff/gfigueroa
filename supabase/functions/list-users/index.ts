@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
-    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -50,74 +49,69 @@ Deno.serve(async (req) => {
 
     if (roleData?.role !== "admin") {
       return new Response(
-        JSON.stringify({ success: false, error: "Solo los administradores pueden invitar usuarios" }),
+        JSON.stringify({ success: false, error: "Solo los administradores pueden ver usuarios" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get request body
-    const { email, fullName, role } = await req.json();
+    // Get all auth users with admin API
+    const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
-    if (!email) {
+    if (listError) {
+      console.error("List users error:", listError);
       return new Response(
-        JSON.stringify({ success: false, error: "El email es requerido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: listError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create user using admin API with email confirmation required
-    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      email_confirm: false, // User must confirm email
-      user_metadata: {
-        full_name: fullName || email,
-      },
-    });
+    // Get profiles
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-    if (createError) {
-      console.error("Create user error:", createError);
+    if (profilesError) {
+      console.error("Profiles error:", profilesError);
       return new Response(
-        JSON.stringify({ success: false, error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: profilesError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // If role is admin, update the user_roles table
-    if (role === "admin" && userData.user) {
-      // Wait a moment for the trigger to create the profile and role
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const { error: roleError } = await supabaseAdmin
-        .from("user_roles")
-        .update({ role: "admin" })
-        .eq("user_id", userData.user.id);
+    // Get roles
+    const { data: roles, error: rolesError } = await supabaseAdmin
+      .from("user_roles")
+      .select("*");
 
-      if (roleError) {
-        console.error("Role update error:", roleError);
-      }
+    if (rolesError) {
+      console.error("Roles error:", rolesError);
+      return new Response(
+        JSON.stringify({ success: false, error: rolesError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Send invite email using Supabase's built-in email
-    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://id-preview--3a86ef41-ba39-4b90-94a6-16ffe456eee8.lovable.app/",
+    // Combine data
+    const users = (profiles || []).map((profile) => {
+      const authUser = authUsers.users.find((u) => u.id === profile.user_id);
+      const userRole = roles?.find((r) => r.user_id === profile.user_id);
+      
+      return {
+        id: profile.id,
+        user_id: profile.user_id,
+        full_name: profile.full_name,
+        email: authUser?.email || "",
+        is_active: profile.is_active,
+        created_at: profile.created_at,
+        role: userRole?.role || "user",
+      };
     });
 
-    if (inviteError) {
-      console.error("Invite email error:", inviteError);
-      // User was created, try magic link as fallback
-      const { error: linkError } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://id-preview--3a86ef41-ba39-4b90-94a6-16ffe456eee8.lovable.app/",
-      });
-      
-      if (linkError) {
-        console.error("Reset password email error:", linkError);
-      }
-    }
-
-    console.log("User created and invite sent:", userData.user?.id);
+    console.log(`Listed ${users.length} users`);
 
     return new Response(
-      JSON.stringify({ success: true, user: userData.user }),
+      JSON.stringify({ success: true, users }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
