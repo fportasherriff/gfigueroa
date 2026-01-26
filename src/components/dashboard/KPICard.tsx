@@ -11,6 +11,7 @@ interface KPICardProps {
   value: string;
   trend?: number;
   trendLabel?: string;
+  trendSuffix?: string; // e.g., "pts" for percentage points instead of "%"
   trendInverse?: boolean; // If true, negative trend is good (e.g., for "Deuda")
   tooltip?: {
     description: string;
@@ -25,6 +26,7 @@ export const KPICard = ({
   value,
   trend,
   trendLabel = 'vs mes anterior',
+  trendSuffix = '%',
   trendInverse = false,
   tooltip,
   icon,
@@ -79,7 +81,7 @@ export const KPICard = ({
         <div className={cn('flex items-center gap-1 text-sm', getTrendColor())}>
           {getTrendIcon()}
           <span>
-            {trend > 0 ? '+' : ''}{trend.toFixed(1)}% {trendLabel}
+            {trend > 0 ? '+' : ''}{trend.toFixed(1)}{trendSuffix} {trendLabel}
           </span>
         </div>
       )}

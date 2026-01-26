@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Download, Phone, Info } from 'lucide-react';
+import { Copy, Download, Info, MessageCircle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { TableSkeleton, EmptyState } from '../DashboardStates';
 import { formatCurrencyFull, getRiskBadgeColor, getPriorityBadgeColor, getDaysColor } from '@/lib/formatters';
 import type { FinanzasDeudores } from '@/types/dashboard';
@@ -203,14 +203,34 @@ export const DeudoresTable = ({ data, isLoading }: DeudoresTableProps) => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{row.telefono || 'N/A'}</span>
                       {row.telefono && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => copyPhone(row.telefono)}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
+                        <>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`https://wa.me/54${row.telefono.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5 text-white" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Enviar WhatsApp a {row.nombre_completo}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => copyPhone(row.telefono)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
