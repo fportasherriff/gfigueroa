@@ -24,12 +24,12 @@ export const EvolucionChart = ({ data, isLoading }: EvolucionChartProps) => {
   const chartData = useMemo(() => {
     if (!data.length) return [];
 
-    // Group by month
+    // Group by month with REAL calculations
     const monthlyData: Record<string, {
       mes: string;
       facturado: number;
-      cobrado: number;
-      tasaCobro: number;
+      turnosAsistidos: number;
+      turnosConRevenue: number;
     }> = {};
 
     data.forEach(d => {
@@ -38,20 +38,32 @@ export const EvolucionChart = ({ data, isLoading }: EvolucionChartProps) => {
         monthlyData[monthKey] = {
           mes: monthKey,
           facturado: 0,
-          cobrado: 0,
-          tasaCobro: 0,
+          turnosAsistidos: 0,
+          turnosConRevenue: 0,
         };
       }
       monthlyData[monthKey].facturado += Number(d.revenue_facturado || 0);
+      monthlyData[monthKey].turnosAsistidos += Number(d.turnos_asistidos || 0);
+      monthlyData[monthKey].turnosConRevenue += Number(d.turnos_con_revenue || 0);
     });
 
-    // Calculate cobrado (estimated) and tasa
+    // Calculate cobrado and tasa with REAL data per month
     return Object.values(monthlyData)
-      .map(m => ({
-        ...m,
-        cobrado: m.facturado * 0.75, // Estimación
-        tasaCobro: 75, // Estimación
-      }))
+      .map(m => {
+        // Tasa de cobro real calculada por mes
+        const tasaCobro = m.turnosAsistidos > 0 
+          ? (m.turnosConRevenue / m.turnosAsistidos) * 100 
+          : 0;
+        // Cobrado estimado basado en tasa real del mes
+        const cobrado = m.facturado * (tasaCobro / 100);
+        
+        return {
+          mes: m.mes,
+          facturado: m.facturado,
+          cobrado: cobrado,
+          tasaCobro: tasaCobro,
+        };
+      })
       .sort((a, b) => a.mes.localeCompare(b.mes));
   }, [data]);
 
