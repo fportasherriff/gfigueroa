@@ -70,6 +70,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      execute_select: { Args: { query: string }; Returns: Json }
       execute_sql: { Args: { query: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }

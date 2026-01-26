@@ -11,11 +11,17 @@ import type {
 } from '@/types/dashboard';
 import { subMonths, startOfMonth, endOfMonth, format } from 'date-fns';
 
-// Helper function to query dashboard views using execute_sql RPC
+// Helper function to query dashboard views using execute_select RPC
 const queryDashboardView = async <T>(sql: string): Promise<T[]> => {
-  const { data, error } = await supabase.rpc('execute_sql', { query: sql });
+  const { data, error } = await supabase.rpc('execute_select', { query: sql });
   
   if (error) throw error;
+  
+  // Handle error returned from the function
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new Error((data as any).error);
+  }
+  
   return (data || []) as T[];
 };
 
