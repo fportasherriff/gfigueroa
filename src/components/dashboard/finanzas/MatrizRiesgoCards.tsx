@@ -90,10 +90,10 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     const total = Object.values(segmentosDataCalc).reduce((sum, s) => sum + s.cantidad, 0);
 
     const donut = [
-      { name: 'Premium Activos', value: segmentosDataCalc.premiumActivos.cantidad, color: SEGMENT_COLORS.premiumActivos },
-      { name: 'Premium Riesgo', value: segmentosDataCalc.premiumRiesgo.cantidad, color: SEGMENT_COLORS.premiumRiesgo },
-      { name: 'Medios Activos', value: segmentosDataCalc.mediosActivos.cantidad, color: SEGMENT_COLORS.mediosActivos },
-      { name: 'Críticos Inactivos', value: segmentosDataCalc.criticosInactivos.cantidad, color: SEGMENT_COLORS.criticosInactivos },
+      { name: 'Premium Activos', value: segmentosDataCalc.premiumActivos.cantidad, pct: total > 0 ? (segmentosDataCalc.premiumActivos.cantidad / total * 100) : 0, color: SEGMENT_COLORS.premiumActivos },
+      { name: 'Premium Riesgo', value: segmentosDataCalc.premiumRiesgo.cantidad, pct: total > 0 ? (segmentosDataCalc.premiumRiesgo.cantidad / total * 100) : 0, color: SEGMENT_COLORS.premiumRiesgo },
+      { name: 'Medios Activos', value: segmentosDataCalc.mediosActivos.cantidad, pct: total > 0 ? (segmentosDataCalc.mediosActivos.cantidad / total * 100) : 0, color: SEGMENT_COLORS.mediosActivos },
+      { name: 'Críticos Inactivos', value: segmentosDataCalc.criticosInactivos.cantidad, pct: total > 0 ? (segmentosDataCalc.criticosInactivos.cantidad / total * 100) : 0, color: SEGMENT_COLORS.criticosInactivos },
     ];
 
     return { segmentosData: segmentosDataCalc, totalClientes: total, donutData: donut };
@@ -181,7 +181,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     return (
       <div className="bg-background border border-border rounded-lg p-2 shadow-lg text-sm">
         <p className="font-medium">{d.name}</p>
-        <p className="text-muted-foreground">{d.value} clientes</p>
+        <p className="text-muted-foreground">{d.pct.toFixed(1)}%</p>
       </div>
     );
   };
@@ -277,7 +277,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
                       outerRadius={80}
                       paddingAngle={2}
                       dataKey="value"
-                      label={({ name, value }) => `${value}`}
+                      label={({ pct }) => `${pct.toFixed(0)}%`}
                       labelLine={false}
                     >
                       {donutData.map((entry, index) => (
@@ -291,14 +291,14 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
               <p className="text-center text-sm font-medium mt-2">
                 {totalClientes} clientes total
               </p>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-3 text-xs max-w-[220px]">
                 {donutData.map((item) => (
                   <div key={item.name} className="flex items-center gap-1">
                     <div 
-                      className="w-2 h-2 rounded-full" 
+                      className="w-2 h-2 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-muted-foreground truncate">{item.name}</span>
+                    <span className="text-muted-foreground whitespace-nowrap">{item.pct.toFixed(0)}%</span>
                   </div>
                 ))}
               </div>

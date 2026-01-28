@@ -35,8 +35,8 @@ interface KPICardProps {
 }
 
 const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, valueColor, tooltip }: KPICardProps) => (
-  <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-    <CardContent className="p-4">
+  <Card className="border-none shadow-sm hover:shadow-md transition-shadow h-full">
+    <CardContent className="p-4 flex flex-col h-full">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-muted/50">{icon}</div>
@@ -62,9 +62,11 @@ const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, value
         </TooltipProvider>
       </div>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      <div className="flex-1">
+        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      </div>
       
-      {/* Bottom gradient bar */}
+      {/* Bottom gradient bar - always at bottom */}
       <div 
         className={`h-1 rounded-full mt-4 bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
       />
