@@ -40,7 +40,7 @@ export const ComposicionDeudaChart = ({
   const pctTQP = deudaTotal > 0 ? ((deudaTQP / deudaTotal) * 100).toFixed(1) : '0';
   const pctExtras = deudaTotal > 0 ? ((deudaExtras / deudaTotal) * 100).toFixed(1) : '0';
   const deudaPromedio = clientesTotal > 0 ? deudaTotal / clientesTotal : 0;
-  const ratioDeudaRevenue = 12.6; // This should come from actual data
+  const ratioDeudaFacturacion = 12.6; // This should come from actual data
 
   const chartData = [
     { name: 'Procedimientos (TQP)', value: deudaTQP, color: '#3B82F6' },
@@ -147,8 +147,8 @@ export const ComposicionDeudaChart = ({
 
           {/* Stat 3: Ratio */}
           <div className="border-l-4 border-orange-500 pl-3 py-2">
-            <p className="text-sm text-muted-foreground">Ratio Deuda/Revenue</p>
-            <p className="text-2xl font-bold text-orange-600">{ratioDeudaRevenue}%</p>
+            <p className="text-sm text-muted-foreground">Ratio Deuda/Facturación</p>
+            <p className="text-2xl font-bold text-orange-600">{ratioDeudaFacturacion}%</p>
           </div>
         </CardContent>
       </Card>

@@ -95,7 +95,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Row 1 */}
       <KPICard
-        title="Revenue Procedimientos"
+        title="Facturación Procedimientos"
         value={formatCurrency(kpis.revenueTotal)}
         icon={<DollarSign className="h-4 w-4 text-blue-600" />}
         gradientFrom="from-blue-400"

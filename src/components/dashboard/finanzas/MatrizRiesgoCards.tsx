@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,8 +44,60 @@ const generarScript = (cliente: FinanzasRecuperoMaster) => {
   return `Hola ${nombre}, te contacto de Centro Ghigi Figueroa.\n\nTe recordamos que tenés un saldo pendiente de $${deuda}K. ¿Podemos coordinar un pago o establecer un plan de cuotas?\n\nGracias por tu atención.`;
 };
 
+const SEGMENT_COLORS: Record<SegmentKey, string> = {
+  premiumActivos: '#10B981',
+  premiumRiesgo: '#F59E0B',
+  mediosActivos: '#3B82F6',
+  criticosInactivos: '#EF4444'
+};
+
 export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) => {
   const [selectedSegment, setSelectedSegment] = useState<SegmentKey | null>(null);
+
+  // Segment clients into risk matrix
+  const { segmentosData, totalClientes, donutData } = useMemo(() => {
+    const segmentos = {
+      premiumActivos: data.filter(c => 
+        Number(c.ltv) >= 1000000 && c.dias_desde_ultima_visita <= 30
+      ),
+      premiumRiesgo: data.filter(c => 
+        Number(c.ltv) >= 1000000 && c.dias_desde_ultima_visita > 30 && c.dias_desde_ultima_visita <= 90
+      ),
+      mediosActivos: data.filter(c => 
+        Number(c.ltv) >= 200000 && Number(c.ltv) < 1000000 && c.dias_desde_ultima_visita <= 60
+      ),
+      criticosInactivos: data.filter(c => 
+        c.dias_desde_ultima_visita > 90
+      )
+    };
+
+    const calcSegmentData = (clients: FinanzasRecuperoMaster[]): SegmentData => ({
+      cantidad: clients.length,
+      deudaTotal: clients.reduce((sum, c) => sum + Number(c.saldo_total), 0),
+      deudaPromedio: clients.length > 0 
+        ? clients.reduce((sum, c) => sum + Number(c.saldo_total), 0) / clients.length 
+        : 0,
+      clientes: clients
+    });
+
+    const segmentosDataCalc: Record<SegmentKey, SegmentData> = {
+      premiumActivos: calcSegmentData(segmentos.premiumActivos),
+      premiumRiesgo: calcSegmentData(segmentos.premiumRiesgo),
+      mediosActivos: calcSegmentData(segmentos.mediosActivos),
+      criticosInactivos: calcSegmentData(segmentos.criticosInactivos)
+    };
+
+    const total = Object.values(segmentosDataCalc).reduce((sum, s) => sum + s.cantidad, 0);
+
+    const donut = [
+      { name: 'Premium Activos', value: segmentosDataCalc.premiumActivos.cantidad, color: SEGMENT_COLORS.premiumActivos },
+      { name: 'Premium Riesgo', value: segmentosDataCalc.premiumRiesgo.cantidad, color: SEGMENT_COLORS.premiumRiesgo },
+      { name: 'Medios Activos', value: segmentosDataCalc.mediosActivos.cantidad, color: SEGMENT_COLORS.mediosActivos },
+      { name: 'Críticos Inactivos', value: segmentosDataCalc.criticosInactivos.cantidad, color: SEGMENT_COLORS.criticosInactivos },
+    ];
+
+    return { segmentosData: segmentosDataCalc, totalClientes: total, donutData: donut };
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -59,38 +112,6 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
       </Card>
     );
   }
-
-  // Segment clients into risk matrix
-  const segmentos = {
-    premiumActivos: data.filter(c => 
-      Number(c.ltv) >= 1000000 && c.dias_desde_ultima_visita <= 30
-    ),
-    premiumRiesgo: data.filter(c => 
-      Number(c.ltv) >= 1000000 && c.dias_desde_ultima_visita > 30 && c.dias_desde_ultima_visita <= 90
-    ),
-    mediosActivos: data.filter(c => 
-      Number(c.ltv) >= 200000 && Number(c.ltv) < 1000000 && c.dias_desde_ultima_visita <= 60
-    ),
-    criticosInactivos: data.filter(c => 
-      c.dias_desde_ultima_visita > 90
-    )
-  };
-
-  const calcSegmentData = (clients: FinanzasRecuperoMaster[]): SegmentData => ({
-    cantidad: clients.length,
-    deudaTotal: clients.reduce((sum, c) => sum + Number(c.saldo_total), 0),
-    deudaPromedio: clients.length > 0 
-      ? clients.reduce((sum, c) => sum + Number(c.saldo_total), 0) / clients.length 
-      : 0,
-    clientes: clients
-  });
-
-  const segmentosData: Record<SegmentKey, SegmentData> = {
-    premiumActivos: calcSegmentData(segmentos.premiumActivos),
-    premiumRiesgo: calcSegmentData(segmentos.premiumRiesgo),
-    mediosActivos: calcSegmentData(segmentos.mediosActivos),
-    criticosInactivos: calcSegmentData(segmentos.criticosInactivos)
-  };
 
   const handleCopyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
@@ -107,6 +128,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
   const segmentConfig: Record<SegmentKey, { 
     title: string; 
     subtitle: string; 
+    criteria: string;
     borderColor: string; 
     textColor: string;
     footer: string;
@@ -115,6 +137,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     premiumActivos: {
       title: '🟢 Premium Activos',
       subtitle: 'LTV ≥$1M • Última visita ≤30 días',
+      criteria: 'Clientes con LTV mayor o igual a $1 millón y que visitaron en los últimos 30 días. Incluye clientes con o sin deuda.',
       borderColor: 'border-green-500',
       textColor: 'text-green-700',
       footer: '✓ Alto valor • Buen engagement • Proteger relación',
@@ -123,6 +146,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     premiumRiesgo: {
       title: '🟡 Premium En Riesgo',
       subtitle: 'LTV ≥$1M • Última visita 31-90 días',
+      criteria: 'Clientes con LTV mayor o igual a $1 millón pero con inactividad de 31 a 90 días. Incluye clientes con o sin deuda.',
       borderColor: 'border-yellow-500',
       textColor: 'text-yellow-700',
       footer: '⚠️ Alto valor • Inactividad creciente • Contactar esta semana',
@@ -131,6 +155,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     mediosActivos: {
       title: '🔵 Medios Activos',
       subtitle: 'LTV $200K-$1M • Última visita ≤60 días',
+      criteria: 'Clientes con LTV entre $200K y $1M que visitaron en los últimos 60 días. Incluye clientes con o sin deuda.',
       borderColor: 'border-blue-500',
       textColor: 'text-blue-700',
       footer: 'ℹ️ Valor medio • Buen engagement • Seguimiento normal',
@@ -139,6 +164,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
     criticosInactivos: {
       title: '🔴 Críticos Inactivos',
       subtitle: 'Cualquier LTV • Última visita >90 días',
+      criteria: 'Clientes con más de 90 días sin visita, independientemente de su LTV. Incluye clientes con o sin deuda.',
       borderColor: 'border-red-500',
       textColor: 'text-red-700',
       footer: '🔥 ALTO RIESGO • Contactar HOY • Recupero difícil',
@@ -148,6 +174,17 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
 
   const selectedData = selectedSegment ? segmentosData[selectedSegment] : null;
   const selectedConfig = selectedSegment ? segmentConfig[selectedSegment] : null;
+
+  const CustomDonutTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div className="bg-background border border-border rounded-lg p-2 shadow-lg text-sm">
+        <p className="font-medium">{d.name}</p>
+        <p className="text-muted-foreground">{d.value} clientes</p>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -159,7 +196,7 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
               <CardDescription>Segmentación por LTV y actividad • Click para ver clientes</CardDescription>
             </div>
             <TooltipProvider>
-              <Tooltip>
+              <UITooltip>
                 <TooltipTrigger asChild>
                   <button className="text-muted-foreground hover:text-foreground transition-colors">
                     <Info className="h-4 w-4" />
@@ -177,54 +214,138 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
                     Vista: finanzas_recupero_master
                   </p>
                 </TooltipContent>
-              </Tooltip>
+              </UITooltip>
             </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(Object.keys(segmentConfig) as SegmentKey[]).map((key) => {
-              const config = segmentConfig[key];
-              const data = segmentosData[key];
-              
-              return (
-                <Card 
-                  key={key}
-                  className={`border-2 ${config.borderColor} bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]`}
-                  onClick={() => setSelectedSegment(key)}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className={`text-sm font-semibold ${config.textColor}`}>
-                      {config.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {config.subtitle}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-2">
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <span className={`text-4xl font-bold ${config.textColor}`}>
-                        {data.cantidad}
-                      </span>
-                      <span className="text-sm text-muted-foreground">clientes</span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Deuda Total:</span>
-                        <span className="font-medium">{formatCurrency(data.deudaTotal)}</span>
+          {/* Grid with donut in center */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Left column: Premium Activos + Medios Activos */}
+            <div className="space-y-4">
+              {(['premiumActivos', 'mediosActivos'] as SegmentKey[]).map((key) => {
+                const config = segmentConfig[key];
+                const segData = segmentosData[key];
+                
+                return (
+                  <Card 
+                    key={key}
+                    className={`border-2 ${config.borderColor} bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]`}
+                    onClick={() => setSelectedSegment(key)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className={`text-sm font-semibold ${config.textColor}`}>
+                        {config.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {config.subtitle}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className={`text-3xl font-bold ${config.textColor}`}>
+                          {segData.cantidad}
+                        </span>
+                        <span className="text-sm text-muted-foreground">clientes</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Promedio:</span>
-                        <span className="font-medium">{formatCurrency(data.deudaPromedio)}</span>
+                      <p className="text-xs text-muted-foreground mb-2">{config.criteria}</p>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Deuda Total:</span>
+                          <span className="font-medium">{formatCurrency(segData.deudaTotal)}</span>
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-xs mt-3 pt-2 border-t border-border text-muted-foreground">
-                      {config.footer}
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      <p className="text-xs mt-2 pt-2 border-t border-border text-muted-foreground">
+                        {config.footer}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Center: Donut Chart */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, value }) => `${value}`}
+                      labelLine={false}
+                    >
+                      {donutData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomDonutTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-center text-sm font-medium mt-2">
+                {totalClientes} clientes total
+              </p>
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                {donutData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-1">
+                    <div 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted-foreground truncate">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right column: Premium Riesgo + Críticos Inactivos */}
+            <div className="space-y-4">
+              {(['premiumRiesgo', 'criticosInactivos'] as SegmentKey[]).map((key) => {
+                const config = segmentConfig[key];
+                const segData = segmentosData[key];
+                
+                return (
+                  <Card 
+                    key={key}
+                    className={`border-2 ${config.borderColor} bg-white cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02]`}
+                    onClick={() => setSelectedSegment(key)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className={`text-sm font-semibold ${config.textColor}`}>
+                        {config.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {config.subtitle}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className={`text-3xl font-bold ${config.textColor}`}>
+                          {segData.cantidad}
+                        </span>
+                        <span className="text-sm text-muted-foreground">clientes</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{config.criteria}</p>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Deuda Total:</span>
+                          <span className="font-medium">{formatCurrency(segData.deudaTotal)}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs mt-2 pt-2 border-t border-border text-muted-foreground">
+                        {config.footer}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -16,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
@@ -35,8 +34,6 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
   const debtByProfesional = useMemo(() => {
     if (!clientesData.length) return {};
     const grouped = clientesData.reduce((acc, cliente) => {
-      // This would need the profesional_ultima_visita field which may not exist
-      // For now we'll just show the facturacion data
       return acc;
     }, {} as Record<string, { deuda: number; clientes: number }>);
     return grouped;
@@ -79,7 +76,7 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
         <p className="font-medium text-foreground mb-2">{d.profesional}</p>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Revenue:</span>
+            <span className="text-muted-foreground">Facturación:</span>
             <span className="font-medium">{formatCurrency(d.revenue_generado)}</span>
           </div>
           <div className="flex justify-between">
@@ -107,7 +104,7 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">Rendimiento por Profesional</CardTitle>
-            <CardDescription>Revenue generado y métricas de facturación</CardDescription>
+            <CardDescription>Facturación generada y métricas de rendimiento</CardDescription>
           </div>
           <TooltipProvider>
             <UITooltip>
@@ -119,11 +116,11 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
               <TooltipContent side="left" className="max-w-xs">
                 <p className="font-semibold mb-2">¿Qué mide?</p>
                 <div className="space-y-1 text-xs">
-                  <p>Revenue: Total facturado por profesional</p>
+                  <p>Facturación: Total facturado por profesional</p>
                   <p>Turnos $: Cantidad de turnos con facturación</p>
                   <p>Ticket: Promedio por turno facturado</p>
-                  <p>Tasa Fact.: % de turnos que generaron revenue</p>
-                  <p>% Part.: Participación en revenue total</p>
+                  <p>Tasa Fact.: % de turnos que generaron facturación</p>
+                  <p>% Part.: Participación en facturación total</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
                   Vista: finanzas_por_profesional
@@ -146,10 +143,35 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                 <TableHeader>
                   <TableRow>
                     <TableHead>Profesional</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Facturación</TableHead>
                     <TableHead className="text-right">Turnos $</TableHead>
                     <TableHead className="text-right">Ticket</TableHead>
-                    <TableHead className="text-right">Tasa</TableHead>
+                    <TableHead className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        Tasa Fact.
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <button className="text-muted-foreground hover:text-foreground">
+                                <Info className="h-3 w-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="font-semibold mb-1">Tasa de Facturación</p>
+                              <p className="text-xs text-muted-foreground">
+                                Porcentaje de turnos que generaron facturación sobre el total de turnos del profesional.
+                              </p>
+                              <p className="text-xs mt-2 font-medium">
+                                Fórmula: (Turnos con $ / Total Turnos) × 100
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Indica efectividad en convertir consultas en facturación.
+                              </p>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </div>
+                    </TableHead>
                     <TableHead className="w-[150px]">% Participación</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -158,6 +180,7 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                     const participation = totalRevenue > 0 
                       ? ((Number(prof.revenue_generado) || 0) / totalRevenue) * 100 
                       : 0;
+                    const tasaFacturacion = prof.tasa_facturacion_pct || 0;
                     
                     return (
                       <TableRow key={prof.profesional}>
@@ -170,17 +193,27 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                           {formatCurrency(prof.ticket_promedio || 0)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Badge 
-                            variant="outline" 
-                            className={getRateBadge(100 - (prof.tasa_facturacion_pct || 0))}
-                          >
-                            {(prof.tasa_facturacion_pct || 0).toFixed(1)}%
-                          </Badge>
+                          <div className="w-full">
+                            <div className="text-xs text-muted-foreground mb-1 text-right">
+                              {tasaFacturacion.toFixed(1)}%
+                            </div>
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className="bg-green-500 h-2 rounded-full transition-all"
+                                style={{ width: `${Math.min(100, tasaFacturacion)}%` }}
+                              />
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Progress value={participation} className="h-2" />
-                            <span className="text-xs text-muted-foreground w-10">
+                            <div className="w-full bg-muted rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all"
+                                style={{ width: `${Math.min(100, participation)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-12 text-right">
                               {participation.toFixed(1)}%
                             </span>
                           </div>
@@ -220,7 +253,7 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                   <Legend />
                   <Bar 
                     dataKey="revenue_generado" 
-                    name="Revenue"
+                    name="Facturación"
                     fill="#3B82F6" 
                     radius={[0, 4, 4, 0]}
                   />
