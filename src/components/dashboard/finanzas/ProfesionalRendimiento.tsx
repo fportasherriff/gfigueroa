@@ -31,6 +31,29 @@ interface ProfesionalRendimientoProps {
 export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: ProfesionalRendimientoProps) => {
   const [activeTab, setActiveTab] = useState('facturacion');
 
+  // All hooks must be called before any conditional returns
+  const debtByProfesional = useMemo(() => {
+    if (!clientesData.length) return {};
+    const grouped = clientesData.reduce((acc, cliente) => {
+      // This would need the profesional_ultima_visita field which may not exist
+      // For now we'll just show the facturacion data
+      return acc;
+    }, {} as Record<string, { deuda: number; clientes: number }>);
+    return grouped;
+  }, [clientesData]);
+
+  // Memoize derived data
+  const { dataWithRevenue, totalRevenue, chartData } = useMemo(() => {
+    if (!data?.length) return { dataWithRevenue: [], totalRevenue: 0, chartData: [] };
+    const filtered = data.filter(p => Number(p.revenue_generado) > 0);
+    const total = filtered.reduce((sum, p) => sum + (Number(p.revenue_generado) || 0), 0);
+    return {
+      dataWithRevenue: filtered,
+      totalRevenue: total,
+      chartData: filtered.slice(0, 10)
+    };
+  }, [data]);
+
   if (isLoading) {
     return <ChartSkeleton />;
   }
@@ -47,21 +70,6 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
       </Card>
     );
   }
-
-  // Filter to those with revenue and calculate totals
-  const dataWithRevenue = data.filter(p => Number(p.revenue_generado) > 0);
-  const totalRevenue = dataWithRevenue.reduce((sum, p) => sum + (Number(p.revenue_generado) || 0), 0);
-  const chartData = dataWithRevenue.slice(0, 10);
-
-  // Calculate debt by professional
-  const debtByProfesional = useMemo(() => {
-    const grouped = clientesData.reduce((acc, cliente) => {
-      // This would need the profesional_ultima_visita field which may not exist
-      // For now we'll just show the facturacion data
-      return acc;
-    }, {} as Record<string, { deuda: number; clientes: number }>);
-    return grouped;
-  }, [clientesData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.[0]) return null;
