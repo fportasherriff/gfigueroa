@@ -24,7 +24,8 @@ interface KPICardProps {
   value: string;
   subtitle?: string;
   icon: React.ReactNode;
-  borderColor: string;
+  gradientFrom: string;
+  gradientTo: string;
   valueColor: string;
   tooltip: {
     title: string;
@@ -33,13 +34,13 @@ interface KPICardProps {
   };
 }
 
-const KPICard = ({ title, value, subtitle, icon, borderColor, valueColor, tooltip }: KPICardProps) => (
-  <Card className={`border-l-4 ${borderColor} hover:shadow-md transition-shadow`}>
+const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, valueColor, tooltip }: KPICardProps) => (
+  <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
     <CardContent className="p-4">
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-muted">{icon}</div>
-          <span className="text-sm font-medium text-muted-foreground">{title}</span>
+          <div className="p-2 rounded-lg bg-muted/50">{icon}</div>
+          <span className="text-sm text-muted-foreground">{title}</span>
         </div>
         <TooltipProvider>
           <Tooltip>
@@ -60,8 +61,13 @@ const KPICard = ({ title, value, subtitle, icon, borderColor, valueColor, toolti
           </Tooltip>
         </TooltipProvider>
       </div>
-      <p className={`text-2xl font-bold ${valueColor}`}>{value}</p>
+      <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      
+      {/* Bottom gradient bar */}
+      <div 
+        className={`h-1 rounded-full mt-4 bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
+      />
     </CardContent>
   </Card>
 );
@@ -77,20 +83,23 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
     return 'text-red-600';
   };
 
-  const getTasaCobroBorder = (tasa: number) => {
-    if (tasa >= 90) return 'border-green-500';
-    if (tasa >= 80) return 'border-yellow-500';
-    return 'border-red-500';
+  const getTasaCobroGradient = (tasa: number) => {
+    if (tasa >= 90) return { from: 'from-green-400', to: 'to-green-600' };
+    if (tasa >= 80) return { from: 'from-yellow-400', to: 'to-yellow-600' };
+    return { from: 'from-red-400', to: 'to-red-600' };
   };
 
+  const tasaGradient = getTasaCobroGradient(kpis.tasaCobro);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Row 1 */}
       <KPICard
         title="Revenue Procedimientos"
         value={formatCurrency(kpis.revenueTotal)}
         icon={<DollarSign className="h-4 w-4 text-blue-600" />}
-        borderColor="border-blue-500"
+        gradientFrom="from-blue-400"
+        gradientTo="to-blue-600"
         valueColor="text-blue-600"
         tooltip={{
           title: "¿Qué es?",
@@ -104,7 +113,8 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         value={formatPercent(kpis.tasaCobro)}
         subtitle="Meta: ≥90%"
         icon={<TrendingUp className={`h-4 w-4 ${getTasaCobroColor(kpis.tasaCobro)}`} />}
-        borderColor={getTasaCobroBorder(kpis.tasaCobro)}
+        gradientFrom={tasaGradient.from}
+        gradientTo={tasaGradient.to}
         valueColor={getTasaCobroColor(kpis.tasaCobro)}
         tooltip={{
           title: "¿Cómo se calcula?",
@@ -118,7 +128,8 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         value={formatCurrency(kpis.ticketPromedio)}
         subtitle="Por turno facturado"
         icon={<Receipt className="h-4 w-4 text-purple-600" />}
-        borderColor="border-purple-500"
+        gradientFrom="from-purple-400"
+        gradientTo="to-purple-600"
         valueColor="text-purple-600"
         tooltip={{
           title: "¿Qué representa?",
@@ -133,7 +144,8 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         value={formatCurrency(kpis.deudaTQP)}
         subtitle={`${kpis.clientesTQP} clientes`}
         icon={<AlertCircle className="h-4 w-4 text-orange-600" />}
-        borderColor="border-orange-500"
+        gradientFrom="from-orange-400"
+        gradientTo="to-orange-600"
         valueColor="text-orange-600"
         tooltip={{
           title: "¿Qué es TQP?",
@@ -147,7 +159,8 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         value={formatCurrency(kpis.deudaTotal)}
         subtitle={`${kpis.clientesConDeuda} clientes`}
         icon={<AlertTriangle className="h-4 w-4 text-red-600" />}
-        borderColor="border-red-500"
+        gradientFrom="from-red-400"
+        gradientTo="to-red-600"
         valueColor="text-red-600"
         tooltip={{
           title: "¿Qué incluye?",
@@ -161,7 +174,8 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         value={formatCurrency(kpis.deudaCritica)}
         subtitle={`⚡ ${kpis.clientesCriticos} clientes - Acción inmediata`}
         icon={<Flame className="h-4 w-4 text-red-700" />}
-        borderColor="border-red-700"
+        gradientFrom="from-red-600"
+        gradientTo="to-red-800"
         valueColor="text-red-700"
         tooltip={{
           title: "¿Por qué es crítica?",

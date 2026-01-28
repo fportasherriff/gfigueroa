@@ -1,22 +1,19 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Info, Download } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
 import { formatCurrency } from '@/lib/formatters';
+import { toast } from '@/hooks/use-toast';
 import type { FinanzasPorProcedimiento } from '@/types/dashboard';
 
 interface TopProcedimientosProps {
   data: FinanzasPorProcedimiento[];
   isLoading: boolean;
 }
-
-const COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
-  '#8B5CF6', '#EC4899', '#14B8A6', '#F97316',
-  '#06B6D4', '#84CC16'
-];
 
 export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) => {
   if (isLoading) {
@@ -25,7 +22,7 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
 
   if (!data?.length) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm">
         <CardContent className="pt-6">
           <EmptyState 
             title="Sin datos de procedimientos"
@@ -36,123 +33,154 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
     );
   }
 
-  // Take top 10
-  const topData = data.slice(0, 10);
+  // Take top 20 and calculate cumulative
+  const topData = data.slice(0, 20);
+  const totalRevenue = data.reduce((sum, p) => sum + (Number(p.revenue_total) || 0), 0);
+  const top3Revenue = topData.slice(0, 3).reduce((sum, p) => sum + (Number(p.revenue_total) || 0), 0);
+  const top10Revenue = topData.slice(0, 10).reduce((sum, p) => sum + (Number(p.revenue_total) || 0), 0);
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.[0]) return null;
-    const d = payload[0].payload;
-    return (
-      <div className="bg-background border border-border rounded-lg p-3 shadow-lg min-w-[180px]">
-        <p className="font-medium text-foreground mb-2 text-sm">{d.procedimiento}</p>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Revenue:</span>
-            <span className="font-medium">{formatCurrency(d.revenue_total)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Veces:</span>
-            <span>{d.veces_realizado}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Precio prom:</span>
-            <span>{formatCurrency(d.precio_promedio)}</span>
-          </div>
-        </div>
-      </div>
-    );
+  const dataWithCumulative = useMemo(() => {
+    let cumulative = 0;
+    return topData.map((proc, index) => {
+      cumulative += Number(proc.revenue_total) || 0;
+      const pct = totalRevenue > 0 ? ((Number(proc.revenue_total) || 0) / totalRevenue) * 100 : 0;
+      const cumulativePct = totalRevenue > 0 ? (cumulative / totalRevenue) * 100 : 0;
+      return {
+        ...proc,
+        pct,
+        cumulativePct
+      };
+    });
+  }, [topData, totalRevenue]);
+
+  const handleExportCSV = () => {
+    const headers = ['#', 'Procedimiento', 'Revenue Total', '% Rev', 'Veces', 'Precio Promedio', '% Acumulado'];
+    const rows = dataWithCumulative.map((proc, index) => [
+      index + 1,
+      proc.procedimiento,
+      proc.revenue_total,
+      proc.pct.toFixed(1),
+      proc.veces_realizado,
+      proc.precio_promedio,
+      proc.cumulativePct.toFixed(1)
+    ]);
+
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `procedimientos-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast({ title: "CSV exportado", description: `${dataWithCumulative.length} procedimientos exportados` });
   };
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg">Top 10 Procedimientos por Revenue</CardTitle>
+            <CardTitle className="text-lg">Top Procedimientos por Revenue</CardTitle>
             <CardDescription>Servicios más rentables</CardDescription>
           </div>
-          <TooltipProvider>
-            <UITooltip>
-              <TooltipTrigger asChild>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
-                  <Info className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-xs">
-                <p className="font-semibold mb-2">¿Para qué sirve?</p>
-                <p className="text-xs">
-                  Identifica qué procedimientos generan mayor facturación 
-                  para enfocar esfuerzos comerciales y optimizar agenda.
-                </p>
-                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                  Vista: finanzas_por_procedimiento
-                </p>
-              </TooltipContent>
-            </UITooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs">
+                    Identifica qué procedimientos generan mayor facturación 
+                    para enfocar esfuerzos comerciales y optimizar agenda.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
+                    Vista: finanzas_por_procedimiento
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-1" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pie Chart */}
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={topData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  dataKey="revenue_total"
-                  nameKey="procedimiento"
-                  label={({ procedimiento, percent }) => 
-                    `${procedimiento.substring(0, 12)}... (${(percent * 100).toFixed(0)}%)`
-                  }
-                  labelLine={false}
-                >
-                  {topData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8">#</TableHead>
-                  <TableHead>Procedimiento</TableHead>
-                  <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead className="text-right">Veces</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Procedimiento</TableHead>
+                <TableHead className="text-right">Revenue Total</TableHead>
+                <TableHead className="text-right">%</TableHead>
+                <TableHead className="text-right">Veces</TableHead>
+                <TableHead className="text-right">Precio Prom.</TableHead>
+                <TableHead className="w-[150px]">Acum %</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dataWithCumulative.map((proc, index) => (
+                <TableRow key={proc.procedimiento}>
+                  <TableCell className="font-medium text-muted-foreground">
+                    {index + 1}
+                  </TableCell>
+                  <TableCell>
+                    <div className="truncate max-w-[200px]" title={proc.procedimiento}>
+                      {proc.procedimiento}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(proc.revenue_total)}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {proc.pct.toFixed(1)}%
+                  </TableCell>
+                  <TableCell className="text-right">{proc.veces_realizado}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(proc.precio_promedio)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Progress 
+                        value={proc.cumulativePct} 
+                        className={`h-2 ${proc.cumulativePct <= 80 ? '[&>div]:bg-blue-500' : '[&>div]:bg-slate-400'}`}
+                      />
+                      <span className={`text-xs w-10 ${proc.cumulativePct <= 80 ? 'text-blue-600 font-medium' : 'text-muted-foreground'}`}>
+                        {proc.cumulativePct.toFixed(0)}%
+                      </span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topData.map((proc, index) => (
-                  <TableRow key={proc.procedimiento}>
-                    <TableCell className="font-medium text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <div className="truncate max-w-[150px]" title={proc.procedimiento}>
-                        {proc.procedimiento}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {formatCurrency(proc.revenue_total)}
-                    </TableCell>
-                    <TableCell className="text-right">{proc.veces_realizado}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(proc.precio_promedio)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Footer Stats */}
+        <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="text-2xl font-bold text-blue-600">
+              {((top3Revenue / totalRevenue) * 100).toFixed(1)}%
+            </p>
+            <p className="text-xs text-muted-foreground">Top 3 concentra</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-purple-600">
+              {((top10Revenue / totalRevenue) * 100).toFixed(1)}%
+            </p>
+            <p className="text-xs text-muted-foreground">Top 10 concentra</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-600">
+              {data.length}
+            </p>
+            <p className="text-xs text-muted-foreground">Total procedimientos</p>
           </div>
         </div>
       </CardContent>

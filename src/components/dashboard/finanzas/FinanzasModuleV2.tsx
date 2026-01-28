@@ -25,7 +25,7 @@ import { useSucursales } from '@/hooks/useDashboardData';
 import { FinanzasKPIsV2 } from './FinanzasKPIsV2';
 import { EvolucionCobranzaChart } from './EvolucionCobranzaChart';
 import { ComposicionDeudaChart } from './ComposicionDeudaChart';
-import { AgingAnalysisChart } from './AgingAnalysisChart';
+import { MatrizRiesgoChart } from './MatrizRiesgoChart';
 import { PrioridadCards } from './PrioridadCards';
 import { MatrizRiesgoCards } from './MatrizRiesgoCards';
 import { ClientesRecuperoTable } from './ClientesRecuperoTable';
@@ -61,23 +61,21 @@ export const FinanzasModuleV2 = () => {
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="py-3 px-4">
-          <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium">Este dashboard mide procedimientos médicos + deuda total.</p>
-              <p className="text-blue-700">
-                Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : '...'}) + 
-                Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : '...'})
-              </p>
-            </div>
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-blue-800">
+            <p className="font-medium">Este dashboard mide procedimientos médicos + deuda total.</p>
+            <p className="text-blue-700">
+              Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : '...'}) + 
+              Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : '...'})
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Global Filters */}
-      <div className="flex flex-wrap items-center gap-4 p-4 bg-card border rounded-lg">
+      <div className="flex flex-wrap items-center gap-4">
         {/* Date Range */}
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -172,25 +170,32 @@ export const FinanzasModuleV2 = () => {
         </div>
       </div>
 
-      {/* KPIs Grid */}
+      {/* KPIs Grid - 6 cards minimalistas */}
       <FinanzasKPIsV2 kpis={kpis} isLoading={kpisLoading} />
 
-      {/* Evolution Chart */}
+      {/* Evolution Chart - Tabs Revenue/Ticket */}
       <EvolucionCobranzaChart 
         data={diarioData || []} 
         isLoading={kpisLoading} 
       />
 
-      {/* Debt Composition */}
+      {/* Debt Composition - 3 columns */}
       <ComposicionDeudaChart
         deudaTQP={kpis?.deudaTQP || 0}
         deudaExtras={(kpis?.deudaTotal || 0) - (kpis?.deudaTQP || 0)}
         clientesTQP={kpis?.clientesTQP || 0}
         clientesTotal={kpis?.clientesConDeuda || 0}
-        isLoading={kpisLoading}
+        agingData={agingData}
+        isLoading={kpisLoading || agingLoading}
       />
 
-      {/* Recovery Tabs */}
+      {/* Scatter Plot - LTV vs Deuda */}
+      <MatrizRiesgoChart 
+        data={recuperoData || []} 
+        isLoading={recuperoLoading} 
+      />
+
+      {/* Recovery Tabs - Por Antigüedad / Por Cliente */}
       <Tabs defaultValue="antiguedad" className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="antiguedad">🎯 Por Antigüedad</TabsTrigger>
@@ -198,23 +203,31 @@ export const FinanzasModuleV2 = () => {
         </TabsList>
 
         <TabsContent value="antiguedad" className="space-y-6">
-          <AgingAnalysisChart data={agingData || []} isLoading={agingLoading} />
-          <PrioridadCards data={prioridadesData || []} isLoading={prioridadesLoading} />
+          {/* Priority Cards with Donut */}
+          <PrioridadCards 
+            data={prioridadesData || []} 
+            clientesData={recuperoData || []}
+            isLoading={prioridadesLoading} 
+          />
         </TabsContent>
 
         <TabsContent value="cliente" className="space-y-6">
+          {/* Risk Matrix Cards */}
           <MatrizRiesgoCards data={recuperoData || []} isLoading={recuperoLoading} />
+          
+          {/* Clients Table */}
           <ClientesRecuperoTable data={recuperoData || []} isLoading={recuperoLoading} />
         </TabsContent>
       </Tabs>
 
-      {/* Professional Performance */}
+      {/* Professional Performance - Tabs */}
       <ProfesionalRendimiento 
         data={profesionalesData || []} 
+        clientesData={recuperoData || []}
         isLoading={profesionalesLoading} 
       />
 
-      {/* Top Procedures */}
+      {/* Top Procedures - Table with cumulative */}
       <TopProcedimientos 
         data={procedimientosData || []} 
         isLoading={procedimientosLoading} 
