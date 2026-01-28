@@ -43,6 +43,62 @@ export interface FinanzasDeudores {
   prioridad_contacto: 'Baja' | 'Media' | 'Alta' | 'Crítica';
 }
 
+// New Finanzas types for redesigned module
+export interface FinanzasRecuperoMaster {
+  id_cliente: string;
+  nombre_completo: string;
+  telefono: string;
+  email: string;
+  sucursal: string;
+  saldo_total: number;
+  deuda_tqp: number;
+  deuda_extras: number;
+  ltv: number;
+  ratio_deuda_ltv_pct: number | null;
+  dias_desde_ultima_visita: number;
+  segmento_riesgo: 'Bajo' | 'Medio' | 'Alto';
+  segmento_ltv: 'Premium' | 'Medio' | 'Nuevo';
+  prioridad_contacto: 'Baja' | 'Media' | 'Alta' | 'Crítica';
+  tipo_mensaje: 'premium' | 'alto_valor' | 'estandar';
+}
+
+export interface FinanzasDeudaAging {
+  segmento_antiguedad: string;
+  orden: number;
+  cantidad_clientes: number;
+  deuda_total: number;
+  deuda_tqp: number;
+  deuda_promedio: number;
+}
+
+export interface FinanzasPrioridad {
+  prioridad: 'Crítica' | 'Alta' | 'Media' | 'Baja';
+  orden: number;
+  cantidad_clientes: number;
+  deuda_total: number;
+  deuda_promedio: number;
+}
+
+export interface FinanzasPorProfesional {
+  profesional: string;
+  turnos_atendidos: number;
+  turnos_facturados: number;
+  clientes_atendidos: number;
+  revenue_generado: number | null;
+  ticket_promedio: number | null;
+  tasa_facturacion_pct: number;
+}
+
+export interface FinanzasPorProcedimiento {
+  procedimiento: string;
+  veces_realizado: number;
+  clientes_unicos: number;
+  revenue_total: number;
+  precio_promedio: number;
+  primera_vez: string;
+  ultima_vez: string;
+}
+
 export interface OperacionesDiario {
   fecha: string;
   profesional: string;

@@ -3,7 +3,7 @@ import { LayoutDashboard, DollarSign, Calendar, TrendingUp, RefreshCw, FileX } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FinanzasModule } from '@/components/dashboard/finanzas/FinanzasModule';
+import { FinanzasModuleV2 } from '@/components/dashboard/finanzas/FinanzasModuleV2';
 import { OperacionesModule } from '@/components/dashboard/operaciones/OperacionesModule';
 import { ComercialModule } from '@/components/dashboard/comercial/ComercialModule';
 import { useFinanzasDiario } from '@/hooks/useDashboardData';
@@ -140,7 +140,7 @@ export default function Dashboard() {
         </TabsList>
 
         <TabsContent value="finanzas">
-          <FinanzasModule />
+          <FinanzasModuleV2 />
         </TabsContent>
 
         <TabsContent value="operaciones">
