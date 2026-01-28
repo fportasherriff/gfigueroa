@@ -54,7 +54,7 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
   }, [topData, totalRevenue]);
 
   const handleExportCSV = () => {
-    const headers = ['#', 'Procedimiento', 'Revenue Total', '% Rev', 'Veces', 'Precio Promedio', '% Acumulado'];
+    const headers = ['#', 'Procedimiento', 'Facturación Total', '% Fact', 'Veces', 'Precio Promedio', '% Acumulado'];
     const rows = dataWithCumulative.map((proc, index) => [
       index + 1,
       proc.procedimiento,
@@ -80,7 +80,7 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg">Top Procedimientos por Revenue</CardTitle>
+            <CardTitle className="text-lg">Top Procedimientos por Facturación</CardTitle>
             <CardDescription>Servicios más rentables</CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
                 <TableHead>Procedimiento</TableHead>
-                <TableHead className="text-right">Revenue Total</TableHead>
+                <TableHead className="text-right">Facturación Total</TableHead>
                 <TableHead className="text-right">%</TableHead>
                 <TableHead className="text-right">Veces</TableHead>
                 <TableHead className="text-right">Precio Prom.</TableHead>

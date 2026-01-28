@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { Info, Calendar, Building } from 'lucide-react';
+import { Info, Calendar, Building, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 // Hooks
@@ -41,6 +42,7 @@ export const FinanzasModuleV2 = () => {
     to: endOfMonth(now),
   });
   const [sucursal, setSucursal] = useState<string>('all');
+  const [bannerOpen, setBannerOpen] = useState(false);
 
   // Format dates for queries
   const filters = {
@@ -60,19 +62,47 @@ export const FinanzasModuleV2 = () => {
 
   return (
     <div className="space-y-6">
-      {/* Info Banner */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm">
-        <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div className="text-blue-800">
-            <p className="font-medium">Este dashboard mide procedimientos médicos + deuda total.</p>
-            <p className="text-blue-700">
-              Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : '...'}) + 
-              Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : '...'})
-            </p>
-          </div>
+      {/* Collapsible Info Banner */}
+      <Collapsible open={bannerOpen} onOpenChange={setBannerOpen}>
+        <div className="bg-blue-50 border-l-4 border-blue-500 rounded overflow-hidden">
+          <CollapsibleTrigger asChild>
+            <button className="w-full p-3 flex items-center justify-between text-left hover:bg-blue-100/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <span className="font-medium text-blue-800">ℹ️ Guía Rápida del Dashboard</span>
+              </div>
+              <ChevronDown className={cn(
+                "h-4 w-4 text-blue-600 transition-transform",
+                bannerOpen && "rotate-180"
+              )} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-3 pb-3 pt-0 text-sm text-blue-800 space-y-3 border-t border-blue-200">
+              <p className="pt-3">Este dashboard analiza la facturación y recupero de deuda del centro médico.</p>
+              
+              <div>
+                <p className="font-medium">📊 Cómo usar:</p>
+                <ul className="list-disc list-inside ml-2 text-blue-700 space-y-1">
+                  <li>Pasa el mouse sobre los íconos ℹ️ para ver explicaciones detalladas</li>
+                  <li>Haz click en las cards de prioridad/segmentos para ver listados de clientes</li>
+                  <li>Usa los botones de WhatsApp para enviar mensajes pre-escritos</li>
+                  <li>Exporta tablas a CSV con los botones de descarga</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-medium">💰 Sobre la Deuda:</p>
+                <ul className="list-disc list-inside ml-2 text-blue-700 space-y-1">
+                  <li>Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : '...'}) + Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : '...'})</li>
+                  <li>TQP = "Tiene Que Pagar" - Procedimientos médicos registrados en turnos</li>
+                  <li>Extras = Productos, paquetes y servicios no registrados en el sistema de turnos</li>
+                </ul>
+              </div>
+            </div>
+          </CollapsibleContent>
         </div>
-      </div>
+      </Collapsible>
 
       {/* Global Filters */}
       <div className="flex flex-wrap items-center gap-4">
