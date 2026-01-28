@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,8 +31,11 @@ const PRIORIDAD_BADGE: Record<string, string> = {
   'Baja': 'bg-slate-400 text-white'
 };
 
-type SortField = 'saldo_total' | 'ltv' | 'dias_desde_ultima_visita' | 'ratio_deuda_ltv_pct';
+type SortField = 'saldo_total' | 'ltv' | 'dias_desde_ultima_visita' | 'ratio_deuda_ltv_pct' | 'segmento_riesgo' | 'prioridad_contacto';
 type SortDirection = 'asc' | 'desc';
+
+const RIESGO_ORDER: Record<string, number> = { 'Alto': 3, 'Medio': 2, 'Bajo': 1 };
+const PRIORIDAD_ORDER: Record<string, number> = { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 };
 
 const generarScript = (cliente: FinanzasRecuperoMaster) => {
   const nombreCompleto = cliente.nombre_completo || '';
@@ -81,6 +85,8 @@ export const ClientesRecuperoTable = ({ data, isLoading }: ClientesRecuperoTable
   const [sortField, setSortField] = useState<SortField>('saldo_total');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(0);
+  const [riesgoFilter, setRiesgoFilter] = useState<string>('all');
+  const [prioridadFilter, setPrioridadFilter] = useState<string>('all');
   const itemsPerPage = 50;
 
   // Filter and sort data
@@ -90,20 +96,40 @@ export const ClientesRecuperoTable = ({ data, isLoading }: ClientesRecuperoTable
     // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = data.filter(c => 
+      filtered = filtered.filter(c => 
         c.nombre_completo?.toLowerCase().includes(term) ||
         c.telefono?.includes(term) ||
         c.email?.toLowerCase().includes(term)
       );
     }
 
+    // Riesgo filter
+    if (riesgoFilter !== 'all') {
+      filtered = filtered.filter(c => c.segmento_riesgo === riesgoFilter);
+    }
+
+    // Prioridad filter
+    if (prioridadFilter !== 'all') {
+      filtered = filtered.filter(c => c.prioridad_contacto === prioridadFilter);
+    }
+
     // Sort
     return [...filtered].sort((a, b) => {
+      if (sortField === 'segmento_riesgo') {
+        const aVal = RIESGO_ORDER[a.segmento_riesgo] || 0;
+        const bVal = RIESGO_ORDER[b.segmento_riesgo] || 0;
+        return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+      }
+      if (sortField === 'prioridad_contacto') {
+        const aVal = PRIORIDAD_ORDER[a.prioridad_contacto] || 0;
+        const bVal = PRIORIDAD_ORDER[b.prioridad_contacto] || 0;
+        return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+      }
       const aVal = Number(a[sortField]) || 0;
       const bVal = Number(b[sortField]) || 0;
       return sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
     });
-  }, [data, searchTerm, sortField, sortDirection]);
+  }, [data, searchTerm, sortField, sortDirection, riesgoFilter, prioridadFilter]);
 
   // Paginate
   const paginatedData = processedData.slice(
@@ -236,110 +262,125 @@ export const ClientesRecuperoTable = ({ data, isLoading }: ClientesRecuperoTable
               </Button>
             </div>
           </div>
-          <Input
-            placeholder="Buscar por nombre, teléfono o email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm mt-2"
-          />
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <Input
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-40"
+            />
+            <Select value={riesgoFilter} onValueChange={setRiesgoFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Riesgo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo Riesgo</SelectItem>
+                <SelectItem value="Alto">Alto</SelectItem>
+                <SelectItem value="Medio">Medio</SelectItem>
+                <SelectItem value="Bajo">Bajo</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={prioridadFilter} onValueChange={setPrioridadFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Prioridad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toda Prioridad</SelectItem>
+                <SelectItem value="Crítica">Crítica</SelectItem>
+                <SelectItem value="Alta">Alta</SelectItem>
+                <SelectItem value="Media">Media</SelectItem>
+                <SelectItem value="Baja">Baja</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Cliente</TableHead>
-                  <TableHead className="text-right">
-                    <SortButton field="saldo_total" label="Deuda Total" />
-                  </TableHead>
-                  <TableHead className="text-right">TQP</TableHead>
-                  <TableHead className="text-right">
-                    <SortButton field="ltv" label="LTV" />
-                  </TableHead>
-                  <TableHead className="text-right">
-                    <SortButton field="ratio_deuda_ltv_pct" label="Ratio %" />
-                  </TableHead>
-                  <TableHead className="text-center">
-                    <SortButton field="dias_desde_ultima_visita" label="Días" />
-                  </TableHead>
-                  <TableHead className="text-center">Riesgo</TableHead>
-                  <TableHead className="text-center">Prioridad</TableHead>
-                  <TableHead className="text-center">Acciones</TableHead>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[160px]">Cliente</TableHead>
+                <TableHead className="text-right w-[90px]">
+                  <SortButton field="saldo_total" label="Deuda" />
+                </TableHead>
+                <TableHead className="text-right w-[80px]">
+                  <SortButton field="ltv" label="LTV" />
+                </TableHead>
+                <TableHead className="text-center w-[50px]">
+                  <SortButton field="dias_desde_ultima_visita" label="Días" />
+                </TableHead>
+                <TableHead className="text-center w-[70px]">
+                  <SortButton field="segmento_riesgo" label="Riesgo" />
+                </TableHead>
+                <TableHead className="text-center w-[80px]">
+                  <SortButton field="prioridad_contacto" label="Prior." />
+                </TableHead>
+                <TableHead className="text-center w-[90px]">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.map((cliente) => (
+                <TableRow key={cliente.id_cliente} className="hover:bg-muted/50">
+                  <TableCell className="font-medium py-2">
+                    <div className="truncate max-w-[150px]" title={cliente.nombre_completo}>
+                      {cliente.nombre_completo}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right py-2 font-semibold text-red-600">
+                    {formatCurrency(cliente.saldo_total)}
+                  </TableCell>
+                  <TableCell className="text-right py-2 text-blue-600">
+                    {formatCurrency(cliente.ltv)}
+                  </TableCell>
+                  <TableCell className="text-center py-2">
+                    <span className={cliente.dias_desde_ultima_visita > 60 ? 'text-red-600 font-bold' : ''}>
+                      {cliente.dias_desde_ultima_visita}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center py-2">
+                    <Badge variant="outline" className={`text-xs ${RIESGO_BADGE[cliente.segmento_riesgo]}`}>
+                      {cliente.segmento_riesgo}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center py-2">
+                    <Badge className={`text-xs ${PRIORIDAD_BADGE[cliente.prioridad_contacto]}`}>
+                      {cliente.prioridad_contacto}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center py-2">
+                    <div className="flex items-center justify-center gap-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleCopyPhone(cliente.telefono)}
+                        title="Copiar teléfono"
+                      >
+                        <Phone className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => window.open(`mailto:${cliente.email}`, '_blank')}
+                        title="Enviar email"
+                      >
+                        <Mail className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-green-600 hover:text-green-700"
+                        onClick={() => handleOpenScript(cliente)}
+                        title="Ver script de contacto"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.map((cliente) => (
-                  <TableRow key={cliente.id_cliente} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">
-                      <div className="truncate max-w-[180px]" title={cliente.nombre_completo}>
-                        {cliente.nombre_completo}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-red-600">
-                      {formatCurrency(cliente.saldo_total)}
-                    </TableCell>
-                    <TableCell className="text-right text-orange-600">
-                      {formatCurrency(cliente.deuda_tqp)}
-                    </TableCell>
-                    <TableCell className="text-right text-blue-600">
-                      {formatCurrency(cliente.ltv)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {cliente.ratio_deuda_ltv_pct != null 
-                        ? `${Number(cliente.ratio_deuda_ltv_pct).toFixed(1)}%` 
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className={cliente.dias_desde_ultima_visita > 60 ? 'text-red-600 font-bold' : ''}>
-                        {cliente.dias_desde_ultima_visita}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className={RIESGO_BADGE[cliente.segmento_riesgo]}>
-                        {cliente.segmento_riesgo}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={PRIORIDAD_BADGE[cliente.prioridad_contacto]}>
-                        {cliente.prioridad_contacto}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleCopyPhone(cliente.telefono)}
-                          title="Copiar teléfono"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => window.open(`mailto:${cliente.email}`, '_blank')}
-                          title="Enviar email"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700"
-                          onClick={() => handleOpenScript(cliente)}
-                          title="Ver script de contacto"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           {totalPages > 1 && (
