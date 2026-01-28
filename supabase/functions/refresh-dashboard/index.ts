@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Lista de vistas materializadas a refrescar (schema analytics)
-const MATERIALIZED_VIEWS = [
+// Vistas materializadas en schema analytics (capa 1 - datos crudos transformados)
+const ANALYTICS_VIEWS = [
   'fact_turnos',
   'fact_cartera_pasiva',
   'fact_leads',
@@ -15,6 +15,22 @@ const MATERIALIZED_VIEWS = [
   'dim_origen',
   'dim_procedimiento',
   'dim_profesional'
+];
+
+// Vistas materializadas en schema dashboard (capa 2 - agregaciones para UI)
+const DASHBOARD_VIEWS = [
+  'finanzas_diario',
+  'finanzas_deudores',
+  'finanzas_recupero_master',
+  'finanzas_deuda_aging',
+  'finanzas_prioridades',
+  'finanzas_por_profesional',
+  'finanzas_por_procedimiento',
+  'operaciones_diario',
+  'operaciones_heatmap',
+  'operaciones_capacidad',
+  'comercial_embudo',
+  'comercial_canales'
 ];
 
 serve(async (req: Request) => {
@@ -29,41 +45,85 @@ serve(async (req: Request) => {
 
     console.log('Starting dashboard refresh...');
 
-    const results: { view: string; success: boolean; error?: string }[] = [];
+    const results: { view: string; schema: string; success: boolean; error?: string }[] = [];
 
-    // Refrescar cada vista materializada
-    for (const viewName of MATERIALIZED_VIEWS) {
-      console.log(`Refreshing view: ${viewName}`);
+    // PASO 1: Refrescar vistas de analytics (datos base)
+    console.log('=== Refreshing ANALYTICS views ===');
+    for (const viewName of ANALYTICS_VIEWS) {
+      console.log(`Refreshing analytics.${viewName}`);
       
       const { data, error } = await supabase.rpc('refresh_view', { 
         view_name: viewName 
       });
 
       if (error) {
-        console.error(`Error refreshing ${viewName}:`, error);
+        console.error(`Error refreshing analytics.${viewName}:`, error);
         results.push({ 
-          view: viewName, 
+          view: viewName,
+          schema: 'analytics',
           success: false, 
           error: error.message 
         });
       } else {
-        console.log(`Successfully refreshed ${viewName}`);
+        console.log(`Successfully refreshed analytics.${viewName}`);
         results.push({ 
-          view: viewName, 
+          view: viewName,
+          schema: 'analytics',
           success: true 
         });
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
+    // PASO 2: Refrescar vistas de dashboard (agregaciones UI)
+    console.log('=== Refreshing DASHBOARD views ===');
+    for (const viewName of DASHBOARD_VIEWS) {
+      console.log(`Refreshing dashboard.${viewName}`);
+      
+      // Usar SQL directo para refrescar en schema dashboard
+      const { data, error } = await supabase.rpc('execute_sql', { 
+        query: `REFRESH MATERIALIZED VIEW dashboard.${viewName}` 
+      });
+
+      if (error) {
+        console.error(`Error refreshing dashboard.${viewName}:`, error);
+        results.push({ 
+          view: viewName,
+          schema: 'dashboard',
+          success: false, 
+          error: error.message 
+        });
+      } else if (data && !data.success) {
+        console.error(`Error refreshing dashboard.${viewName}:`, data.error);
+        results.push({ 
+          view: viewName,
+          schema: 'dashboard',
+          success: false, 
+          error: data.error 
+        });
+      } else {
+        console.log(`Successfully refreshed dashboard.${viewName}`);
+        results.push({ 
+          view: viewName,
+          schema: 'dashboard',
+          success: true 
+        });
+      }
+    }
+
+    const analyticsSuccess = results.filter(r => r.schema === 'analytics' && r.success).length;
+    const dashboardSuccess = results.filter(r => r.schema === 'dashboard' && r.success).length;
+    const totalSuccess = results.filter(r => r.success).length;
+    const totalViews = ANALYTICS_VIEWS.length + DASHBOARD_VIEWS.length;
     const failedViews = results.filter(r => !r.success);
 
-    console.log(`Dashboard refresh complete: ${successCount}/${MATERIALIZED_VIEWS.length} views refreshed`);
+    console.log(`Dashboard refresh complete: ${totalSuccess}/${totalViews} views refreshed`);
+    console.log(`  - Analytics: ${analyticsSuccess}/${ANALYTICS_VIEWS.length}`);
+    console.log(`  - Dashboard: ${dashboardSuccess}/${DASHBOARD_VIEWS.length}`);
 
     return new Response(
       JSON.stringify({
         success: failedViews.length === 0,
-        message: `${successCount}/${MATERIALIZED_VIEWS.length} vistas actualizadas`,
+        message: `${totalSuccess}/${totalViews} vistas actualizadas (Analytics: ${analyticsSuccess}, Dashboard: ${dashboardSuccess})`,
         results,
         timestamp: new Date().toISOString()
       }),
