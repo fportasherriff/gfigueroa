@@ -1,17 +1,16 @@
 import { useMemo } from 'react';
-import { Calendar, CheckCircle, XCircle, UserX, Clock, DollarSign } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, UserX, DollarSign } from 'lucide-react';
 import { KPICard } from '../KPICard';
 import { KPIGridSkeleton } from '../DashboardStates';
 import { formatNumber, formatPercent, formatCurrency, getMonthKey } from '@/lib/formatters';
-import type { OperacionesDiario, OperacionesCapacidad } from '@/types/dashboard';
+import type { OperacionesDiario } from '@/types/dashboard';
 
 interface OperacionesKPIsProps {
   operacionesData: OperacionesDiario[];
-  capacidadData: OperacionesCapacidad[];
   isLoading: boolean;
 }
 
-export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: OperacionesKPIsProps) => {
+export const OperacionesKPIs = ({ operacionesData, isLoading }: OperacionesKPIsProps) => {
   const kpis = useMemo(() => {
     if (!operacionesData.length) return null;
 
@@ -37,12 +36,6 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
     const tasaInasistencia = turnosAgendados > 0 ? (turnosInasistidos / turnosAgendados) * 100 : 0;
     const revenuePorTurno = turnosAsistidos > 0 ? revenue / turnosAsistidos : 0;
 
-    // Capacidad del período filtrado
-    const lastMonthCapacidad = capacidadData.filter(d => d.periodo_mes >= currentMonthStart);
-    const ocupacionPromedio = lastMonthCapacidad.length > 0
-      ? lastMonthCapacidad.reduce((acc, d) => acc + Number(d.ocupacion_estimada_pct || 0), 0) / lastMonthCapacidad.length
-      : 0;
-
     return {
       turnosAgendados: {
         value: turnosAgendados,
@@ -56,17 +49,14 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
       tasaInasistencia: {
         value: tasaInasistencia,
       },
-      ocupacionReal: {
-        value: ocupacionPromedio,
-      },
       revenuePorTurno: {
         value: revenuePorTurno,
       },
     };
-  }, [operacionesData, capacidadData]);
+  }, [operacionesData]);
 
   if (isLoading) {
-    return <KPIGridSkeleton count={6} />;
+    return <KPIGridSkeleton count={5} />;
   }
 
   if (!kpis) {
@@ -85,12 +75,6 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
     return 'text-red-600';
   };
 
-  const getOcupacionColor = (tasa: number) => {
-    if (tasa >= 50 && tasa <= 80) return 'text-green-600';
-    if (tasa >= 80 && tasa <= 90) return 'text-yellow-600';
-    if (tasa > 90) return 'text-red-600';
-    return 'text-yellow-600';
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -141,17 +125,6 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
         }}
       />
 
-      <KPICard
-        title="Ocupación Real"
-        value={formatPercent(kpis.ocupacionReal.value)}
-        icon={<Clock className="w-4 h-4" />}
-        colorClass={getOcupacionColor(kpis.ocupacionReal.value)}
-        tooltip={{
-          description: "Porcentaje de capacidad utilizada. Óptimo: 50-80%",
-          calculation: "AVG(ocupacion_estimada_pct) del período",
-          source: "dashboard.operaciones_capacidad"
-        }}
-      />
 
       <KPICard
         title="Facturación/Turno"

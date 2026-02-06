@@ -151,15 +151,13 @@ export const OperacionesModule = () => {
       {/* KPIs Grid */}
       <OperacionesKPIs 
         operacionesData={operacionesData || []}
-        capacidadData={capacidadData || []}
-        isLoading={operacionesLoading || capacidadLoading}
+        isLoading={operacionesLoading}
       />
 
       {/* Evolution Charts */}
       <OperacionesEvolucion 
         data={operacionesData || []}
-        capacidadData={capacidadData || []}
-        isLoading={operacionesLoading || capacidadLoading}
+        isLoading={operacionesLoading}
       />
 
       {/* Tabs Section */}
