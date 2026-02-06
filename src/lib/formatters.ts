@@ -44,10 +44,32 @@ export const formatDateShort = (date: string | Date): string => {
 };
 
 export const formatMonthYear = (date: string | Date): string => {
+  // Parse date string as local date to avoid timezone shift
+  if (typeof date === 'string') {
+    const [year, month] = date.split('-').map(Number);
+    // Create date at noon to avoid any timezone edge cases
+    const localDate = new Date(year, month - 1, 15, 12, 0, 0);
+    return new Intl.DateTimeFormat('es-AR', {
+      month: 'short',
+      year: '2-digit',
+    }).format(localDate);
+  }
   return new Intl.DateTimeFormat('es-AR', {
     month: 'short',
     year: '2-digit',
-  }).format(new Date(date));
+  }).format(date);
+};
+
+// Parse a date string (YYYY-MM-DD) as local date without timezone conversion
+export const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day || 1, 12, 0, 0);
+};
+
+// Get month key (YYYY-MM) from a date string without timezone issues
+export const getMonthKey = (dateStr: string): string => {
+  const [year, month] = dateStr.split('-').map(Number);
+  return `${year}-${String(month).padStart(2, '0')}`;
 };
 
 export const formatNumber = (value: number): string => {

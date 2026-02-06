@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
-import { formatNumber, formatPercent, formatCurrency, formatMonthYear } from '@/lib/formatters';
+import { formatNumber, formatPercent, formatCurrency, formatMonthYear, getMonthKey } from '@/lib/formatters';
 import type { OperacionesDiario, OperacionesCapacidad } from '@/types/dashboard';
 import {
   ComposedChart,
@@ -17,7 +17,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, parseISO, startOfMonth } from 'date-fns';
 
 interface OperacionesEvolucionProps {
   data: OperacionesDiario[];
@@ -58,7 +57,8 @@ export const OperacionesEvolucion = ({ data, capacidadData, isLoading }: Operaci
     }> = {};
 
     data.forEach(d => {
-      const monthKey = format(startOfMonth(parseISO(d.fecha)), 'yyyy-MM');
+      // Use local date parsing to avoid timezone shift
+      const monthKey = getMonthKey(d.fecha);
       
       if (!byMonth[monthKey]) {
         byMonth[monthKey] = {
@@ -80,7 +80,8 @@ export const OperacionesEvolucion = ({ data, capacidadData, isLoading }: Operaci
     // Aggregate capacidad by month for ocupacion
     const capacidadByMonth: Record<string, { total: number; count: number }> = {};
     capacidadData.forEach(c => {
-      const monthKey = format(parseISO(c.periodo_mes), 'yyyy-MM');
+      // Use local date parsing to avoid timezone shift
+      const monthKey = getMonthKey(c.periodo_mes);
       if (!capacidadByMonth[monthKey]) {
         capacidadByMonth[monthKey] = { total: 0, count: 0 };
       }

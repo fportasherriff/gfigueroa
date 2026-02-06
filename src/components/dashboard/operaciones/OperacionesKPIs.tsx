@@ -2,9 +2,8 @@ import { useMemo } from 'react';
 import { Calendar, CheckCircle, XCircle, UserX, Clock, DollarSign } from 'lucide-react';
 import { KPICard } from '../KPICard';
 import { KPIGridSkeleton } from '../DashboardStates';
-import { formatNumber, formatPercent, formatCurrency } from '@/lib/formatters';
+import { formatNumber, formatPercent, formatCurrency, getMonthKey } from '@/lib/formatters';
 import type { OperacionesDiario, OperacionesCapacidad } from '@/types/dashboard';
-import { startOfMonth, format, parseISO } from 'date-fns';
 
 interface OperacionesKPIsProps {
   operacionesData: OperacionesDiario[];
@@ -19,8 +18,9 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
     // Use all data in the filtered range (filters are applied in the hook)
     const sortedDates = operacionesData.map(d => d.fecha).sort();
     const lastDate = sortedDates[sortedDates.length - 1];
-    const lastDateParsed = parseISO(lastDate);
-    const currentMonthStart = format(startOfMonth(lastDateParsed), 'yyyy-MM-dd');
+    // Use local date parsing - get month key directly from string
+    const currentMonthKey = getMonthKey(lastDate);
+    const currentMonthStart = `${currentMonthKey}-01`;
 
     // Use all filtered data for aggregation
     const currentMonthData = operacionesData;
