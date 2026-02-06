@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
 import { formatNumber, formatPercent, formatCurrency, formatMonthYear } from '@/lib/formatters';
-import type { OperacionesDiario } from '@/types/dashboard';
+import type { OperacionesDiario, OperacionesCapacidad } from '@/types/dashboard';
 import {
   ComposedChart,
   Area,
@@ -21,6 +21,7 @@ import { format, parseISO, startOfMonth } from 'date-fns';
 
 interface OperacionesEvolucionProps {
   data: OperacionesDiario[];
+  capacidadData: OperacionesCapacidad[];
   isLoading: boolean;
 }
 
@@ -43,11 +44,11 @@ const CustomTooltip = ({ active, payload, label, formatter }: any) => {
   );
 };
 
-export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionProps) => {
+export const OperacionesEvolucion = ({ data, capacidadData, isLoading }: OperacionesEvolucionProps) => {
   const monthlyData = useMemo(() => {
     if (!data.length) return [];
 
-    // Aggregate by month
+    // Aggregate operaciones by month
     const byMonth: Record<string, {
       turnos_agendados: number;
       turnos_asistidos: number;
@@ -76,6 +77,17 @@ export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionPr
       byMonth[monthKey].revenue += Number(d.revenue || 0);
     });
 
+    // Aggregate capacidad by month for ocupacion
+    const capacidadByMonth: Record<string, { total: number; count: number }> = {};
+    capacidadData.forEach(c => {
+      const monthKey = format(parseISO(c.periodo_mes), 'yyyy-MM');
+      if (!capacidadByMonth[monthKey]) {
+        capacidadByMonth[monthKey] = { total: 0, count: 0 };
+      }
+      capacidadByMonth[monthKey].total += Number(c.ocupacion_estimada_pct || 0);
+      capacidadByMonth[monthKey].count += 1;
+    });
+
     return Object.entries(byMonth)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, values]) => {
@@ -91,6 +103,12 @@ export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionPr
         const revenuePorTurno = values.turnos_asistidos > 0 
           ? values.revenue / values.turnos_asistidos 
           : 0;
+        
+        // Ocupación promedio del mes
+        const capacidadMes = capacidadByMonth[month];
+        const ocupacionReal = capacidadMes && capacidadMes.count > 0
+          ? capacidadMes.total / capacidadMes.count
+          : 0;
 
         return {
           mes: formatMonthYear(month + '-01'),
@@ -100,10 +118,10 @@ export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionPr
           tasaCancelacion,
           tasaInasistencia,
           revenuePorTurno,
-          revenue: values.revenue,
+          ocupacionReal,
         };
       });
-  }, [data]);
+  }, [data, capacidadData]);
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -172,16 +190,16 @@ export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionPr
       yAxisFormatter: (v: number) => `${v}%`,
     },
     {
-      id: 'facturacion',
-      label: '💰 Facturación',
-      dataKey: 'revenue',
-      title: 'Evolución de Facturación',
-      description: 'Total facturado por mes.',
-      source: 'dashboard.operaciones_diario',
-      calculation: 'SUM(revenue) por mes',
+      id: 'ocupacion',
+      label: '🕐 Ocupación',
+      dataKey: 'ocupacionReal',
+      title: 'Evolución de Ocupación Real',
+      description: 'Porcentaje de capacidad utilizada por mes. Óptimo: 50-80%',
+      source: 'dashboard.operaciones_capacidad',
+      calculation: 'AVG(ocupacion_estimada_pct) por mes',
       color: 'hsl(262, 83%, 58%)',
-      formatter: formatCurrency,
-      yAxisFormatter: (v: number) => formatCurrency(v),
+      formatter: (v: number) => formatPercent(v),
+      yAxisFormatter: (v: number) => `${v}%`,
     },
     {
       id: 'ticket',

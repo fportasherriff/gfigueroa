@@ -27,8 +27,8 @@ export const OperacionesModule = () => {
   const [sucursalFilter, setSucursalFilter] = useState<string>('all');
   const [profesionalFilter, setProfesionalFilter] = useState<string>('all');
   
-  // Date range filter
-  const defaultFrom = startOfMonth(subMonths(new Date(), 11));
+  // Date range filter - default to January 2025 through current date
+  const defaultFrom = new Date(2025, 0, 1); // January 1, 2025
   const defaultTo = endOfMonth(new Date());
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
@@ -158,7 +158,8 @@ export const OperacionesModule = () => {
       {/* Evolution Charts */}
       <OperacionesEvolucion 
         data={operacionesData || []}
-        isLoading={operacionesLoading}
+        capacidadData={capacidadData || []}
+        isLoading={operacionesLoading || capacidadLoading}
       />
 
       {/* Tabs Section */}
