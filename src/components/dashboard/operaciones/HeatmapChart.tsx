@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
 import { formatNumber, formatPercent } from '@/lib/formatters';
 import type { OperacionesHeatmap } from '@/types/dashboard';
@@ -83,10 +84,33 @@ export const HeatmapChart = ({ data, isLoading }: HeatmapChartProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Mapa de Calor - Asistencia</CardTitle>
-        <CardDescription>
-          Distribución de turnos y tasa de asistencia por día y hora
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Mapa de Calor - Asistencia</CardTitle>
+            <CardDescription>
+              Distribución de turnos y tasa de asistencia por día y hora
+            </CardDescription>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground">
+                <Info className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-medium mb-1">Mapa de Calor</p>
+              <p className="text-xs text-muted-foreground">
+                Muestra la distribución de turnos agendados y la tasa de asistencia para cada combinación de día de la semana y hora del día.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted/50 p-1 rounded">
+                Tasa = (SUM(asistidos) / SUM(agendados)) × 100
+              </p>
+              <p className="text-xs text-blue-600 mt-2 font-mono">
+                📊 dashboard.operaciones_heatmap
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
