@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { Info, Calendar, Building, ChevronDown } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { Info, Calendar, Building, ChevronDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 // Hooks
 import {
@@ -19,21 +19,21 @@ import {
   useFinanzasPorProfesional,
   useFinanzasPorProcedimiento,
   useFinanzasKPIs,
-} from '@/hooks/useFinanzasData';
-import { useSucursales } from '@/hooks/useDashboardData';
+} from "@/hooks/useFinanzasData";
+import { useSucursales } from "@/hooks/useDashboardData";
 
 // Components
-import { FinanzasKPIsV2 } from './FinanzasKPIsV2';
-import { EvolucionCobranzaChart } from './EvolucionCobranzaChart';
-import { ComposicionDeudaChart } from './ComposicionDeudaChart';
-import { MatrizRiesgoChart } from './MatrizRiesgoChart';
-import { PrioridadCards } from './PrioridadCards';
-import { MatrizRiesgoCards } from './MatrizRiesgoCards';
-import { ClientesRecuperoTable } from './ClientesRecuperoTable';
-import { ProfesionalRendimiento } from './ProfesionalRendimiento';
-import { TopProcedimientos } from './TopProcedimientos';
+import { FinanzasKPIsV2 } from "./FinanzasKPIsV2";
+import { EvolucionCobranzaChart } from "./EvolucionCobranzaChart";
+import { ComposicionDeudaChart } from "./ComposicionDeudaChart";
+import { MatrizRiesgoChart } from "./MatrizRiesgoChart";
+import { PrioridadCards } from "./PrioridadCards";
+import { MatrizRiesgoCards } from "./MatrizRiesgoCards";
+import { ClientesRecuperoTable } from "./ClientesRecuperoTable";
+import { ProfesionalRendimiento } from "./ProfesionalRendimiento";
+import { TopProcedimientos } from "./TopProcedimientos";
 
-import type { DateRange } from '@/types/dashboard';
+import type { DateRange } from "@/types/dashboard";
 
 export const FinanzasModuleV2 = () => {
   const now = new Date();
@@ -41,14 +41,14 @@ export const FinanzasModuleV2 = () => {
     from: startOfMonth(subMonths(now, 11)),
     to: endOfMonth(now),
   });
-  const [sucursal, setSucursal] = useState<string>('all');
+  const [sucursal, setSucursal] = useState<string>("all");
   const [bannerOpen, setBannerOpen] = useState(false);
 
   // Format dates for queries
   const filters = {
-    fechaDesde: format(dateRange.from, 'yyyy-MM-dd'),
-    fechaHasta: format(dateRange.to, 'yyyy-MM-dd'),
-    sucursal: sucursal !== 'all' ? sucursal : undefined,
+    fechaDesde: format(dateRange.from, "yyyy-MM-dd"),
+    fechaHasta: format(dateRange.to, "yyyy-MM-dd"),
+    sucursal: sucursal !== "all" ? sucursal : undefined,
   };
 
   // Data hooks
@@ -69,18 +69,15 @@ export const FinanzasModuleV2 = () => {
             <button className="w-full p-3 flex items-center justify-between text-left hover:bg-blue-100/50 transition-colors">
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="font-medium text-blue-800">ℹ️ Guía Rápida del Dashboard</span>
+                <span className="font-medium text-blue-800"> Guía Rápida del Dashboard</span>
               </div>
-              <ChevronDown className={cn(
-                "h-4 w-4 text-blue-600 transition-transform",
-                bannerOpen && "rotate-180"
-              )} />
+              <ChevronDown className={cn("h-4 w-4 text-blue-600 transition-transform", bannerOpen && "rotate-180")} />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-3 pb-3 pt-0 text-sm text-blue-800 space-y-3 border-t border-blue-200">
               <p className="pt-3">Este dashboard analiza la facturación y recupero de deuda del centro médico.</p>
-              
+
               <div>
                 <p className="font-medium">📊 Cómo usar:</p>
                 <ul className="list-disc list-inside ml-2 text-blue-700 space-y-1">
@@ -94,7 +91,10 @@ export const FinanzasModuleV2 = () => {
               <div>
                 <p className="font-medium">💰 Sobre la Deuda:</p>
                 <ul className="list-disc list-inside ml-2 text-blue-700 space-y-1">
-                  <li>Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : '...'}) + Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : '...'})</li>
+                  <li>
+                    Deuda Total = Procedimientos TQP ({kpis ? `$${(kpis.deudaTQP / 1000000).toFixed(1)}M` : "..."}) +
+                    Extras ({kpis ? `$${((kpis.deudaTotal - kpis.deudaTQP) / 1000000).toFixed(1)}M` : "..."})
+                  </li>
                   <li>TQP = "Tiene Que Pagar" - Procedimientos médicos registrados en turnos</li>
                   <li>Extras = Productos, paquetes y servicios no registrados en el sistema de turnos</li>
                 </ul>
@@ -115,7 +115,7 @@ export const FinanzasModuleV2 = () => {
                 variant="outline"
                 className={cn(
                   "justify-start text-left font-normal min-w-[240px]",
-                  !dateRange && "text-muted-foreground"
+                  !dateRange && "text-muted-foreground",
                 )}
               >
                 {dateRange?.from ? (
@@ -159,7 +159,9 @@ export const FinanzasModuleV2 = () => {
             <SelectContent>
               <SelectItem value="all">Todas las sucursales</SelectItem>
               {sucursales?.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -170,30 +172,36 @@ export const FinanzasModuleV2 = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDateRange({
-              from: startOfMonth(now),
-              to: endOfMonth(now),
-            })}
+            onClick={() =>
+              setDateRange({
+                from: startOfMonth(now),
+                to: endOfMonth(now),
+              })
+            }
           >
             Este mes
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDateRange({
-              from: startOfMonth(subMonths(now, 2)),
-              to: endOfMonth(now),
-            })}
+            onClick={() =>
+              setDateRange({
+                from: startOfMonth(subMonths(now, 2)),
+                to: endOfMonth(now),
+              })
+            }
           >
             3 meses
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDateRange({
-              from: startOfMonth(subMonths(now, 11)),
-              to: endOfMonth(now),
-            })}
+            onClick={() =>
+              setDateRange({
+                from: startOfMonth(subMonths(now, 11)),
+                to: endOfMonth(now),
+              })
+            }
           >
             12 meses
           </Button>
@@ -204,10 +212,7 @@ export const FinanzasModuleV2 = () => {
       <FinanzasKPIsV2 kpis={kpis} isLoading={kpisLoading} />
 
       {/* Evolution Chart - Tabs Revenue/Ticket */}
-      <EvolucionCobranzaChart 
-        data={diarioData || []} 
-        isLoading={kpisLoading} 
-      />
+      <EvolucionCobranzaChart data={diarioData || []} isLoading={kpisLoading} />
 
       {/* Debt Composition - 3 columns */}
       <ComposicionDeudaChart
@@ -220,10 +225,7 @@ export const FinanzasModuleV2 = () => {
       />
 
       {/* Scatter Plot - LTV vs Deuda */}
-      <MatrizRiesgoChart 
-        data={recuperoData || []} 
-        isLoading={recuperoLoading} 
-      />
+      <MatrizRiesgoChart data={recuperoData || []} isLoading={recuperoLoading} />
 
       {/* Recovery Tabs - Por Antigüedad / Por Cliente */}
       <Tabs defaultValue="antiguedad" className="space-y-4">
@@ -234,34 +236,31 @@ export const FinanzasModuleV2 = () => {
 
         <TabsContent value="antiguedad" className="space-y-6">
           {/* Priority Cards with Donut */}
-          <PrioridadCards 
-            data={prioridadesData || []} 
+          <PrioridadCards
+            data={prioridadesData || []}
             clientesData={recuperoData || []}
-            isLoading={prioridadesLoading} 
+            isLoading={prioridadesLoading}
           />
         </TabsContent>
 
         <TabsContent value="cliente" className="space-y-6">
           {/* Risk Matrix Cards */}
           <MatrizRiesgoCards data={recuperoData || []} isLoading={recuperoLoading} />
-          
+
           {/* Clients Table */}
           <ClientesRecuperoTable data={recuperoData || []} isLoading={recuperoLoading} />
         </TabsContent>
       </Tabs>
 
       {/* Professional Performance - Tabs */}
-      <ProfesionalRendimiento 
-        data={profesionalesData || []} 
+      <ProfesionalRendimiento
+        data={profesionalesData || []}
         clientesData={recuperoData || []}
-        isLoading={profesionalesLoading} 
+        isLoading={profesionalesLoading}
       />
 
       {/* Top Procedures - Table with cumulative */}
-      <TopProcedimientos 
-        data={procedimientosData || []} 
-        isLoading={procedimientosLoading} 
-      />
+      <TopProcedimientos data={procedimientosData || []} isLoading={procedimientosLoading} />
     </div>
   );
 };
