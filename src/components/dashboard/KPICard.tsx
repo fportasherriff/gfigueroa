@@ -16,6 +16,7 @@ interface KPICardProps {
   tooltip?: {
     description: string;
     calculation?: string;
+    source?: string; // Vista de Supabase fuente
   };
   icon?: React.ReactNode;
   colorClass?: string;
@@ -66,6 +67,11 @@ export const KPICard = ({
               {tooltip.calculation && (
                 <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted/50 p-1 rounded">
                   {tooltip.calculation}
+                </p>
+              )}
+              {tooltip.source && (
+                <p className="text-xs text-blue-600 mt-2 font-mono">
+                  📊 {tooltip.source}
                 </p>
               )}
             </TooltipContent>
