@@ -4,7 +4,7 @@ import { KPICard } from '../KPICard';
 import { KPIGridSkeleton } from '../DashboardStates';
 import { formatNumber, formatPercent, formatCurrency, calculateTrend } from '@/lib/formatters';
 import type { OperacionesDiario, OperacionesCapacidad } from '@/types/dashboard';
-import { startOfMonth, subMonths, format } from 'date-fns';
+import { startOfMonth, subMonths, format, parseISO } from 'date-fns';
 
 interface OperacionesKPIsProps {
   operacionesData: OperacionesDiario[];
@@ -16,12 +16,16 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
   const kpis = useMemo(() => {
     if (!operacionesData.length) return null;
 
-    const now = new Date();
-    const currentMonthStart = format(startOfMonth(now), 'yyyy-MM-dd');
-    const previousMonthStart = format(startOfMonth(subMonths(now, 1)), 'yyyy-MM-dd');
-    const previousMonthEnd = format(startOfMonth(now), 'yyyy-MM-dd');
+    // Find the last month with data instead of using calendar current month
+    const sortedDates = operacionesData.map(d => d.fecha).sort();
+    const lastDate = sortedDates[sortedDates.length - 1];
+    const lastDateParsed = parseISO(lastDate);
+    
+    const currentMonthStart = format(startOfMonth(lastDateParsed), 'yyyy-MM-dd');
+    const previousMonthStart = format(startOfMonth(subMonths(lastDateParsed, 1)), 'yyyy-MM-dd');
+    const previousMonthEnd = currentMonthStart;
 
-    // Current month data
+    // Current month data (last month with data)
     const currentMonthData = operacionesData.filter(d => d.fecha >= currentMonthStart);
     const previousMonthData = operacionesData.filter(
       d => d.fecha >= previousMonthStart && d.fecha < previousMonthEnd
@@ -42,10 +46,19 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
     // Previous month aggregations for trends
     const prevTurnosAgendados = previousMonthData.reduce((acc, d) => acc + Number(d.turnos_agendados || 0), 0);
     const prevTurnosAsistidos = previousMonthData.reduce((acc, d) => acc + Number(d.turnos_asistidos || 0), 0);
+    const prevTurnosCancelados = previousMonthData.reduce((acc, d) => acc + Number(d.turnos_cancelados || 0), 0);
+    const prevTurnosInasistidos = previousMonthData.reduce((acc, d) => acc + Number(d.turnos_inasistidos || 0), 0);
+    const prevRevenue = previousMonthData.reduce((acc, d) => acc + Number(d.revenue || 0), 0);
+    
+    const prevTasaAsistencia = prevTurnosAgendados > 0 ? (prevTurnosAsistidos / prevTurnosAgendados) * 100 : 0;
+    const prevTasaCancelacion = prevTurnosAgendados > 0 ? (prevTurnosCancelados / prevTurnosAgendados) * 100 : 0;
+    const prevTasaInasistencia = prevTurnosAgendados > 0 ? (prevTurnosInasistidos / prevTurnosAgendados) * 100 : 0;
+    const prevRevenuePorTurno = prevTurnosAsistidos > 0 ? prevRevenue / prevTurnosAsistidos : 0;
 
-    // Capacidad promedio
-    const ocupacionPromedio = capacidadData.length > 0
-      ? capacidadData.reduce((acc, d) => acc + Number(d.ocupacion_estimada_pct || 0), 0) / capacidadData.length
+    // Capacidad del último mes
+    const lastMonthCapacidad = capacidadData.filter(d => d.periodo_mes >= currentMonthStart);
+    const ocupacionPromedio = lastMonthCapacidad.length > 0
+      ? lastMonthCapacidad.reduce((acc, d) => acc + Number(d.ocupacion_estimada_pct || 0), 0) / lastMonthCapacidad.length
       : 0;
 
     return {
@@ -55,15 +68,15 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
       },
       tasaAsistencia: {
         value: tasaAsistencia,
-        trend: 0,
+        trend: calculateTrend(tasaAsistencia, prevTasaAsistencia),
       },
       tasaCancelacion: {
         value: tasaCancelacion,
-        trend: 0,
+        trend: calculateTrend(tasaCancelacion, prevTasaCancelacion),
       },
       tasaInasistencia: {
         value: tasaInasistencia,
-        trend: 0,
+        trend: calculateTrend(tasaInasistencia, prevTasaInasistencia),
       },
       ocupacionReal: {
         value: ocupacionPromedio,
@@ -71,7 +84,7 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
       },
       revenuePorTurno: {
         value: revenuePorTurno,
-        trend: 0,
+        trend: calculateTrend(revenuePorTurno, prevRevenuePorTurno),
       },
     };
   }, [operacionesData, capacidadData]);
@@ -111,62 +124,73 @@ export const OperacionesKPIs = ({ operacionesData, capacidadData, isLoading }: O
         trend={kpis.turnosAgendados.trend}
         icon={<Calendar className="w-4 h-4" />}
         tooltip={{
-          description: "Total de turnos agendados en el período seleccionado",
-          calculation: "COUNT(turnos)"
+          description: "Total de turnos agendados en el último mes con datos.",
+          calculation: "SUM(turnos_agendados)",
+          source: "dashboard.operaciones_diario"
         }}
       />
 
       <KPICard
         title="Tasa Asistencia"
         value={formatPercent(kpis.tasaAsistencia.value)}
+        trend={kpis.tasaAsistencia.trend}
         icon={<CheckCircle className="w-4 h-4" />}
         colorClass={getAsistenciaColor(kpis.tasaAsistencia.value)}
         tooltip={{
           description: "Porcentaje de turnos que efectivamente se realizaron. Objetivo: >70%",
-          calculation: "(Turnos asistidos / Turnos agendados) × 100"
+          calculation: "(SUM(turnos_asistidos) / SUM(turnos_agendados)) × 100",
+          source: "dashboard.operaciones_diario"
         }}
       />
 
       <KPICard
         title="Tasa Cancelación"
         value={formatPercent(kpis.tasaCancelacion.value)}
+        trend={kpis.tasaCancelacion.trend}
         icon={<XCircle className="w-4 h-4" />}
         colorClass={getCancelacionColor(kpis.tasaCancelacion.value)}
         tooltip={{
           description: "Porcentaje de turnos cancelados. Objetivo: <15%",
-          calculation: "(Turnos cancelados / Turnos agendados) × 100"
+          calculation: "(SUM(turnos_cancelados) / SUM(turnos_agendados)) × 100",
+          source: "dashboard.operaciones_diario"
         }}
       />
 
       <KPICard
         title="Tasa Inasistencia"
         value={formatPercent(kpis.tasaInasistencia.value)}
+        trend={kpis.tasaInasistencia.trend}
         icon={<UserX className="w-4 h-4" />}
         colorClass={getCancelacionColor(kpis.tasaInasistencia.value)}
         tooltip={{
           description: "Porcentaje de turnos donde el paciente no asistió. Objetivo: <10%",
-          calculation: "(Turnos inasistidos / Turnos agendados) × 100"
+          calculation: "(SUM(turnos_inasistidos) / SUM(turnos_agendados)) × 100",
+          source: "dashboard.operaciones_diario"
         }}
       />
 
       <KPICard
         title="Ocupación Real"
         value={formatPercent(kpis.ocupacionReal.value)}
+        trend={kpis.ocupacionReal.trend}
         icon={<Clock className="w-4 h-4" />}
         colorClass={getOcupacionColor(kpis.ocupacionReal.value)}
         tooltip={{
-          description: "Porcentaje de capacidad utilizada. Óptimo: 50-80%",
-          calculation: "AVG(ocupacion_estimada_pct)"
+          description: "Porcentaje de capacidad utilizada del último mes. Óptimo: 50-80%",
+          calculation: "AVG(ocupacion_estimada_pct) del período",
+          source: "dashboard.operaciones_capacidad"
         }}
       />
 
       <KPICard
-        title="Revenue/Turno"
+        title="Facturación/Turno"
         value={formatCurrency(kpis.revenuePorTurno.value)}
+        trend={kpis.revenuePorTurno.trend}
         icon={<DollarSign className="w-4 h-4" />}
         tooltip={{
-          description: "Ingreso promedio por turno asistido",
-          calculation: "SUM(revenue) / COUNT(turnos_asistidos)"
+          description: "Ingreso promedio por turno asistido en el último mes.",
+          calculation: "SUM(revenue) / SUM(turnos_asistidos)",
+          source: "dashboard.operaciones_diario"
         }}
       />
     </div>
