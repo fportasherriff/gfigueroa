@@ -17,8 +17,8 @@ export const HeatmapChart = ({ data, isLoading }: HeatmapChartProps) => {
   const heatmapData = useMemo(() => {
     if (!data.length) return null;
 
-    // Aggregate by day and hour
-    const matrix: Record<string, Record<number, { turnos: number; tasa: number; revenue: number; count: number }>> = {};
+    // Aggregate by day and hour - sum turnos and calculate tasa correctly
+    const matrix: Record<string, Record<number, { turnos: number; asistidos: number; revenue: number }>> = {};
 
     data.forEach(d => {
       const day = d.dia_semana_num;
@@ -28,26 +28,32 @@ export const HeatmapChart = ({ data, isLoading }: HeatmapChartProps) => {
         matrix[day] = {};
       }
       if (!matrix[day][hour]) {
-        matrix[day][hour] = { turnos: 0, tasa: 0, revenue: 0, count: 0 };
+        matrix[day][hour] = { turnos: 0, asistidos: 0, revenue: 0 };
       }
       
       matrix[day][hour].turnos += Number(d.turnos_agendados || 0);
-      matrix[day][hour].tasa += Number(d.tasa_asistencia_pct || 0);
+      matrix[day][hour].asistidos += Number(d.turnos_asistidos || 0);
       matrix[day][hour].revenue += Number(d.revenue || 0);
-      matrix[day][hour].count += 1;
     });
 
-    // Calculate averages
+    // Calculate tasa as asistidos/agendados (correct way, not averaging percentages)
+    const result: Record<string, Record<number, { turnos: number; tasa: number; revenue: number }>> = {};
+    
     Object.keys(matrix).forEach(day => {
+      result[day] = {};
       Object.keys(matrix[day]).forEach(hour => {
         const h = Number(hour);
-        if (matrix[day][h].count > 0) {
-          matrix[day][h].tasa = matrix[day][h].tasa / matrix[day][h].count;
-        }
+        const cell = matrix[day][h];
+        const tasa = cell.turnos > 0 ? (cell.asistidos / cell.turnos) * 100 : 0;
+        result[day][h] = {
+          turnos: cell.turnos,
+          tasa: tasa,
+          revenue: cell.revenue
+        };
       });
     });
 
-    return matrix;
+    return result;
   }, [data]);
 
   if (isLoading) {
