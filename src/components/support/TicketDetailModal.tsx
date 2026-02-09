@@ -1,4 +1,5 @@
 import { Ticket, statusConfig, priorityConfig, categoryConfig } from "@/types/support";
+import { useProfiles } from "@/hooks/useProfiles";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export function TicketDetailModal({
   open,
   onOpenChange,
 }: TicketDetailModalProps) {
+  const { profiles } = useProfiles();
   const [newComment, setNewComment] = useState("");
 
   if (!ticket) return null;
@@ -79,6 +81,14 @@ export function TicketDetailModal({
               Título
             </label>
             <p className="mt-1 text-foreground">{ticket.title}</p>
+          </div>
+
+          {/* Reported By */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">
+              Reportado por
+            </label>
+            <p className="mt-1 text-sm text-foreground">{ticket.reportedBy}</p>
           </div>
 
           {/* Status & Priority Row */}
@@ -150,11 +160,11 @@ export function TicketDetailModal({
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Francisco Porta">
-                    Francisco Porta (Admin)
-                  </SelectItem>
-                  <SelectItem value="JM">JM</SelectItem>
-                  <SelectItem value="FP">FP</SelectItem>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.full_name || profile.user_id}>
+                      {profile.full_name || "Sin nombre"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
