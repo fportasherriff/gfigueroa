@@ -15,49 +15,23 @@ import { TicketTable } from "@/components/support/TicketTable";
 import { TicketDetailModal } from "@/components/support/TicketDetailModal";
 import { NewTicketModal } from "@/components/support/NewTicketModal";
 import { HowItWorksModal } from "@/components/support/HowItWorksModal";
+import { useTickets } from "@/hooks/useTickets";
 import { 
   Ticket, 
   TicketStatus, 
   statusConfig, 
-  mockTickets 
 } from "@/types/support";
 
 type ViewMode = "kanban" | "table";
 
 export default function Support() {
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const { tickets, loading, createTicket, moveTicket } = useTickets();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [searchQuery, setSearchQuery] = useState("");
-
-  const handleTicketClick = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setDetailModalOpen(true);
-  };
-
-  const handleCreateTicket = (ticketData: Omit<Ticket, "id" | "createdAt" | "updatedAt" | "comments">) => {
-    const newTicket: Ticket = {
-      ...ticketData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      comments: [],
-    };
-    setTickets((prev) => [newTicket, ...prev]);
-  };
-
-  const handleTicketMove = (ticketId: string, newStatus: TicketStatus) => {
-    setTickets((prev) =>
-      prev.map((ticket) =>
-        ticket.id === ticketId
-          ? { ...ticket, status: newStatus, updatedAt: new Date().toISOString() }
-          : ticket
-      )
-    );
-  };
 
   // Status counts
   const statusCounts = Object.keys(statusConfig).reduce((acc, status) => {
@@ -180,11 +154,11 @@ export default function Support() {
       {viewMode === "kanban" ? (
         <KanbanBoard 
           tickets={filteredTickets} 
-          onTicketClick={handleTicketClick}
-          onTicketMove={handleTicketMove}
+          onTicketClick={(ticket) => { setSelectedTicket(ticket); setDetailModalOpen(true); }}
+          onTicketMove={moveTicket}
         />
       ) : (
-        <TicketTable tickets={filteredTickets} onTicketClick={handleTicketClick} />
+        <TicketTable tickets={filteredTickets} onTicketClick={(ticket) => { setSelectedTicket(ticket); setDetailModalOpen(true); }} />
       )}
 
       {/* Modals */}
@@ -196,7 +170,7 @@ export default function Support() {
       <NewTicketModal
         open={newTicketModalOpen}
         onOpenChange={setNewTicketModalOpen}
-        onCreateTicket={handleCreateTicket}
+        onCreateTicket={createTicket}
       />
       <HowItWorksModal open={howItWorksOpen} onOpenChange={setHowItWorksOpen} />
     </div>
