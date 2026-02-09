@@ -201,6 +201,45 @@ export function TicketDetailModal({
 
           <Separator />
 
+          {/* Historial de Estados */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-5 h-5 text-muted-foreground" />
+              <h4 className="font-medium">Historial de Estados</h4>
+            </div>
+            <div className="relative pl-6 space-y-4">
+              <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+              {/* Current status */}
+              <div className="relative flex items-start gap-3">
+                <div className={cn("absolute left-[-18px] top-1 w-3 h-3 rounded-full border-2 border-background", status.bgColor)} />
+                <div>
+                  <p className="text-sm font-medium">{status.label}</p>
+                  <p className="text-xs text-muted-foreground">Estado actual · {formatDate(ticket.updatedAt)}</p>
+                </div>
+              </div>
+              {/* Creation event */}
+              <div className="relative flex items-start gap-3">
+                <div className="absolute left-[-18px] top-1 w-3 h-3 rounded-full border-2 border-background bg-kanban-open" />
+                <div>
+                  <p className="text-sm font-medium">Abierto</p>
+                  <p className="text-xs text-muted-foreground">Creado por {ticket.reportedBy} · {formatDate(ticket.createdAt)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Acciones Administrativas */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+              🚫 Bloquear
+            </Button>
+            <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+              ❌ Rechazar
+            </Button>
+          </div>
+
+          <Separator />
+
           {/* Comments Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
