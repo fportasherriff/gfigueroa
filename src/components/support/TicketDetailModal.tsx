@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, MessageSquare, Clock, Play, AtSign } from "lucide-react";
+import { Upload, MessageSquare, Clock, Play, AtSign, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -26,16 +26,27 @@ interface TicketDetailModalProps {
   ticket: Ticket | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDeleteTicket?: (ticketId: string) => Promise<void>;
 }
 
 export function TicketDetailModal({
   ticket,
   open,
   onOpenChange,
+  onDeleteTicket,
 }: TicketDetailModalProps) {
   const { profiles } = useProfiles();
   const [newComment, setNewComment] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
+  const handleDelete = async () => {
+    if (!ticket || !onDeleteTicket) return;
+    if (!window.confirm("¿Estás seguro de que querés eliminar este ticket?")) return;
+    setDeleting(true);
+    await onDeleteTicket(ticket.id);
+    setDeleting(false);
+    onOpenChange(false);
+  };
   if (!ticket) return null;
 
   const status = statusConfig[ticket.status];
@@ -68,9 +79,14 @@ export function TicketDetailModal({
           <div className="flex items-center gap-2">
             <div className={cn("w-2.5 h-2.5 rounded-full", status.bgColor)} />
             <DialogTitle className="text-lg">Detalle del Ticket</DialogTitle>
-            <span className="text-xs text-muted-foreground ml-auto">
-              #{ticket.id}
+            <span className="text-xs text-muted-foreground ml-auto mr-2">
+              #{ticket.id.slice(0, 8)}
             </span>
+            {onDeleteTicket && (
+              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
