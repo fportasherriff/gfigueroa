@@ -25,7 +25,7 @@ import {
 type ViewMode = "kanban" | "table";
 
 export default function Support() {
-  const { tickets, loading, createTicket, moveTicket } = useTickets();
+  const { tickets, loading, createTicket, moveTicket, deleteTicket } = useTickets();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
@@ -166,6 +166,7 @@ export default function Support() {
         ticket={selectedTicket}
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
+        onDeleteTicket={deleteTicket}
       />
       <NewTicketModal
         open={newTicketModalOpen}

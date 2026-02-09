@@ -107,7 +107,6 @@ export function useTickets() {
 
   const moveTicket = useCallback(
     async (ticketId: string, newStatus: TicketStatus) => {
-      // Optimistic update
       setTickets((prev) =>
         prev.map((t) =>
           t.id === ticketId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t
@@ -122,11 +121,31 @@ export function useTickets() {
       if (error) {
         console.error("Error moving ticket:", error);
         toast.error("Error al mover el ticket");
-        fetchTickets(); // rollback
+        fetchTickets();
       }
     },
     [fetchTickets]
   );
 
-  return { tickets, loading, createTicket, moveTicket };
+  const deleteTicket = useCallback(
+    async (ticketId: string) => {
+      // Delete comments first
+      await supabase.from("ticket_comments").delete().eq("ticket_id", ticketId);
+
+      const { error } = await supabase
+        .from("support_tickets")
+        .delete()
+        .eq("id", ticketId);
+
+      if (error) {
+        console.error("Error deleting ticket:", error);
+        toast.error("Error al eliminar el ticket");
+        return;
+      }
+      toast.success("Ticket eliminado correctamente");
+    },
+    []
+  );
+
+  return { tickets, loading, createTicket, moveTicket, deleteTicket };
 }
