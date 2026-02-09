@@ -61,13 +61,9 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
             <Calendar className="w-3.5 h-3.5" />
             {formatDate(ticket.createdAt)}
           </div>
-          {ticket.assignedTo && (
-            <Avatar className="w-6 h-6">
-              <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                {getInitials(ticket.assignedTo)}
-              </AvatarFallback>
-            </Avatar>
-          )}
+          <span className="truncate max-w-[120px]" title={ticket.reportedBy}>
+            {ticket.reportedBy}
+          </span>
         </div>
       </CardContent>
     </Card>

@@ -24,6 +24,8 @@ import {
   priorityConfig, 
   categoryConfig 
 } from "@/types/support";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfiles } from "@/hooks/useProfiles";
 
 interface NewTicketModalProps {
   open: boolean;
@@ -36,6 +38,9 @@ export function NewTicketModal({
   onOpenChange,
   onCreateTicket,
 }: NewTicketModalProps) {
+  const { user } = useAuth();
+  const { profiles } = useProfiles();
+  const currentProfile = profiles.find((p) => p.user_id === user?.id);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("media");
@@ -56,7 +61,7 @@ export function NewTicketModal({
       priority,
       category,
       assignedTo: null,
-      reportedBy: "Usuario",
+      reportedBy: currentProfile?.full_name || user?.email || "Usuario",
     });
 
     // Reset form
