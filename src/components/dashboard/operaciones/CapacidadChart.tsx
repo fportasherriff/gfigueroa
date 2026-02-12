@@ -74,7 +74,7 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
           </Tooltip>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4" data-validation="dashboard.operaciones_capacidad.COUNT">
         {data.slice(0, 10).map((profesional) => {
           const ocupacion = Number(profesional.ocupacion_estimada_pct || 0);
           

@@ -103,7 +103,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Funnel visualization */}
-        <div className="space-y-4">
+        <div className="space-y-4" data-validation="dashboard.comercial_embudo.COUNT">
           {funnelData.map((stage, idx) => {
             const widthPercentage = Math.max((stage.value / maxValue) * 100, 20);
             const isGoodConversion = stage.conversion === null || stage.conversion >= 70;
