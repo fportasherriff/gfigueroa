@@ -130,7 +130,30 @@ export const ComposicionDeudaChart = ({
       {/* Column 2: Key Stats */}
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Estadísticas Clave</CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="text-lg">Estadísticas Clave</CardTitle>
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Resumen de indicadores clave de deuda: cantidad de clientes, deuda promedio por cliente y ratio deuda sobre facturación.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                    Deuda Promedio = Deuda Total / Clientes con deuda | Ratio = (Deuda Total / Facturación) × 100
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2 font-mono">
+                    📊 dashboard.finanzas_recupero_master
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Stat 1: Clientes con deuda */}
@@ -161,6 +184,27 @@ export const ComposicionDeudaChart = ({
               <CardTitle className="text-lg">Por Antigüedad</CardTitle>
               <CardDescription>Días sin visita</CardDescription>
             </div>
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="max-w-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Distribuye la deuda según los días transcurridos desde la última visita del cliente. A mayor antigüedad, mayor riesgo de incobrabilidad.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                    🟢 0-30d: Bajo riesgo | 🟡 31-60d: Seguimiento | 🟠 61-90d: Medio | 🔴 91-180d: Alto | ⚫ +180d: Crítico
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2 font-mono">
+                    📊 dashboard.finanzas_deuda_aging
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
