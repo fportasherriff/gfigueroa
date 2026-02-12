@@ -98,15 +98,16 @@ export const HeatmapChart = ({ data, isLoading }: HeatmapChartProps) => {
               </button>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-xs">
-              <p className="font-medium mb-1">Mapa de Calor</p>
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
               <p className="text-xs text-muted-foreground">
-                Muestra la distribución de turnos agendados y la tasa de asistencia para cada combinación de día de la semana y hora del día.
+                Muestra la distribución de turnos agendados y la tasa de asistencia para cada combinación de día de la semana y hora del día. Permite identificar franjas horarias con baja asistencia.
               </p>
-              <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted/50 p-1 rounded">
+              <p className="text-xs font-medium mt-2 mb-1">¿Cómo se calcula?</p>
+              <p className="text-xs text-muted-foreground font-mono bg-muted/50 p-1 rounded">
                 Tasa = (SUM(asistidos) / SUM(agendados)) × 100
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 dashboard.operaciones_heatmap
+                📊 Vista: dashboard.operaciones_heatmap
               </p>
             </TooltipContent>
           </Tooltip>

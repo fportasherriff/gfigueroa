@@ -197,7 +197,11 @@ export const PrioridadCards = ({ data, clientesData = [], isLoading }: Prioridad
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Proporción de clientes por nivel de prioridad de contacto</p>
+                      <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                      <p className="text-xs text-muted-foreground">Proporción de clientes por nivel de prioridad de contacto. Click en cada tarjeta para ver la lista de clientes.</p>
+                      <p className="text-xs text-blue-600 mt-2 font-mono">
+                        📊 Vista: dashboard.finanzas_prioridades
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

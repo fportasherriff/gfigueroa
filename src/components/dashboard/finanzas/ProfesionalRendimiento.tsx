@@ -138,16 +138,20 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
-                  <p className="font-semibold mb-2">¿Qué mide?</p>
-                  <div className="space-y-1 text-xs">
-                    <p>Facturación: Total facturado por profesional</p>
-                    <p>Turnos $: Cantidad de turnos con facturación</p>
-                    <p>Ticket: Promedio por turno facturado</p>
-                    <p>Tasa Fact.: % de turnos que generaron facturación</p>
-                    <p>% Part.: Participación en facturación total</p>
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Compara el rendimiento de facturación de cada profesional para identificar oportunidades de mejora y reconocer top performers.
+                  </p>
+                  <p className="text-xs font-medium mt-2 mb-1">¿Qué mide cada columna?</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>• Facturación: Total facturado por profesional</p>
+                    <p>• Turnos $: Turnos con facturación</p>
+                    <p>• Ticket: Promedio por turno facturado</p>
+                    <p>• Tasa Fact.: (Turnos con $ / Total Turnos) × 100</p>
+                    <p>• % Part.: Participación en facturación total</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                    Vista: finanzas_por_profesional
+                  <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                    📊 Vista: dashboard.finanzas_por_profesional
                   </p>
                 </TooltipContent>
               </UITooltip>

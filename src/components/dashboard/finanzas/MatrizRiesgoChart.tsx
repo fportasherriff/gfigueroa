@@ -192,22 +192,26 @@ export const MatrizRiesgoChart = ({ data, isLoading }: MatrizRiesgoChartProps) =
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
-                  <p className="font-semibold mb-2">¿Cómo interpretar?</p>
-                  <div className="space-y-1 text-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Visualiza la relación entre el valor histórico (LTV) y la deuda actual de cada cliente para priorizar estrategias de recupero.
+                  </p>
+                  <p className="text-xs font-medium mt-2 mb-1">¿Cómo se interpreta?</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
                     <p>• Eje X: Valor histórico del cliente (LTV)</p>
                     <p>• Eje Y: Deuda actual total</p>
                     <p>• Tamaño: Mayor = más días sin visita</p>
                     <p>• Color: Según monto de deuda</p>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-border space-y-1 text-xs">
+                  <div className="mt-2 pt-2 border-t border-border space-y-1 text-xs text-muted-foreground">
                     <p className="font-medium">Cuadrantes (click para ver clientes):</p>
                     <p>↗️ Alto LTV + Alta Deuda = Recuperar urgente</p>
                     <p>↘️ Alto LTV + Baja Deuda = Fidelizar</p>
                     <p>↖️ Bajo LTV + Alta Deuda = Riesgo alto</p>
                     <p>↙️ Bajo LTV + Baja Deuda = Seguimiento</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                    Vista: finanzas_recupero_master
+                  <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                    📊 Vista: dashboard.finanzas_recupero_master
                   </p>
                 </TooltipContent>
               </UITooltip>

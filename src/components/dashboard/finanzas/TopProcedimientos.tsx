@@ -93,12 +93,15 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
                   <p className="font-semibold mb-2">¿Para qué sirve?</p>
-                  <p className="text-xs">
-                    Identifica qué procedimientos generan mayor facturación 
-                    para enfocar esfuerzos comerciales y optimizar agenda.
+                  <p className="text-xs text-muted-foreground">
+                    Identifica qué procedimientos generan mayor facturación para enfocar esfuerzos comerciales y optimizar agenda.
                   </p>
-                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                    Vista: finanzas_por_procedimiento
+                  <p className="text-xs font-medium mt-2 mb-1">¿Cómo se calcula?</p>
+                  <p className="text-xs text-muted-foreground font-mono bg-muted/50 p-1 rounded">
+                    % = (revenue_procedimiento / revenue_total) × 100 | Acum% = suma acumulada
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2 font-mono">
+                    📊 Vista: dashboard.finanzas_por_procedimiento
                   </p>
                 </TooltipContent>
               </Tooltip>

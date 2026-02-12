@@ -203,15 +203,19 @@ export const MatrizRiesgoCards = ({ data, isLoading }: MatrizRiesgoCardsProps) =
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
-                  <p className="font-semibold mb-2">¿Cómo interpretar?</p>
-                  <div className="space-y-1 text-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Segmenta clientes por valor (LTV) y actividad reciente para priorizar acciones de retención y recupero.
+                  </p>
+                  <p className="text-xs font-medium mt-2 mb-1">¿Cómo se interpreta?</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
                     <p>🟢 Premium Activos: Proteger y fidelizar</p>
                     <p>🟡 Premium Riesgo: Recuperar urgente</p>
                     <p>🔵 Medios Activos: Mantener engagement</p>
                     <p>🔴 Críticos Inactivos: Acción inmediata</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                    Vista: finanzas_recupero_master
+                  <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                    📊 Vista: dashboard.finanzas_recupero_master
                   </p>
                 </TooltipContent>
               </UITooltip>

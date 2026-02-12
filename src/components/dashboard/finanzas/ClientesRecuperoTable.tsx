@@ -243,15 +243,19 @@ export const ClientesRecuperoTable = ({ data, isLoading }: ClientesRecuperoTable
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="left" className="max-w-xs">
-                    <p className="font-semibold mb-2">¿Cómo usar esta tabla?</p>
-                    <div className="space-y-1 text-xs">
+                    <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                    <p className="text-xs text-muted-foreground">
+                      Lista detallada de clientes con deuda pendiente, con acciones de contacto rápido (WhatsApp, teléfono, email) y scripts personalizados.
+                    </p>
+                    <p className="text-xs font-medium mt-2 mb-1">¿Cómo usar?</p>
+                    <div className="space-y-1 text-xs text-muted-foreground">
                       <p>• Click en columnas para ordenar</p>
                       <p>• Buscar por nombre, teléfono o email</p>
                       <p>• Click en 💬 para ver script de contacto</p>
                       <p>• Exportar a CSV para análisis offline</p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                      Vista: finanzas_recupero_master
+                    <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                      📊 Vista: dashboard.finanzas_recupero_master
                     </p>
                   </TooltipContent>
                 </Tooltip>
