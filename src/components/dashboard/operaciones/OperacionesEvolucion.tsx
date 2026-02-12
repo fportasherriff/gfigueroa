@@ -216,13 +216,14 @@ export const OperacionesEvolucion = ({ data, isLoading }: OperacionesEvolucionPr
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="left" className="max-w-xs">
-                    <p className="font-medium mb-1">{tab.title}</p>
+                    <p className="font-semibold mb-2">¿Para qué sirve?</p>
                     <p className="text-xs text-muted-foreground">{tab.description}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted/50 p-1 rounded">
+                    <p className="text-xs font-medium mt-2 mb-1">¿Cómo se calcula?</p>
+                    <p className="text-xs text-muted-foreground font-mono bg-muted/50 p-1 rounded">
                       {tab.calculation}
                     </p>
                     <p className="text-xs text-blue-600 mt-2 font-mono">
-                      📊 {tab.source}
+                      📊 Vista: {tab.source}
                     </p>
                   </TooltipContent>
                 </Tooltip>
