@@ -115,7 +115,7 @@ export const HeatmapChart = ({ data, isLoading }: HeatmapChartProps) => {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
+          <div className="min-w-[600px]" data-validation="dashboard.operaciones_heatmap.COUNT">
             {/* Header - Hours */}
             <div className="grid gap-1" style={{ gridTemplateColumns: `80px repeat(${HOURS.length}, 1fr)` }}>
               <div />

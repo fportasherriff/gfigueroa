@@ -133,7 +133,7 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
               <TableHead className="text-right">Rev/Cliente</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody data-validation="dashboard.comercial_canales.COUNT">
             {tableData.map((row) => (
               <TableRow key={row.origen}>
                 <TableCell>

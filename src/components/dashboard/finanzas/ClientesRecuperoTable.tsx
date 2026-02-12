@@ -321,7 +321,7 @@ export const ClientesRecuperoTable = ({ data, isLoading }: ClientesRecuperoTable
                 <TableHead className="text-center w-[90px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody data-validation="dashboard.finanzas_deudores.COUNT">
               {paginatedData.map((cliente) => (
                 <TableRow key={cliente.id_cliente} className="hover:bg-muted/50">
                   <TableCell className="font-medium py-2">

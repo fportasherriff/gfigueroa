@@ -220,7 +220,7 @@ export const MatrizRiesgoChart = ({ data, isLoading }: MatrizRiesgoChartProps) =
         </CardHeader>
         <CardContent>
           <div className="h-[500px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" data-validation="dashboard.finanzas_recupero_master.COUNT">
               <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis 

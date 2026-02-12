@@ -211,7 +211,7 @@ export const ProfesionalRendimiento = ({ data, clientesData = [], isLoading }: P
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody data-validation="dashboard.finanzas_por_profesional.COUNT">
               {sortedData.slice(0, 15).map((prof) => {
                 const tasaFacturacion = prof.tasa_facturacion_pct || 0;
                 

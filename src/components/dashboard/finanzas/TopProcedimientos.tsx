@@ -127,7 +127,7 @@ export const TopProcedimientos = ({ data, isLoading }: TopProcedimientosProps) =
                 <TableHead className="w-[150px]">Acum %</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody data-validation="dashboard.finanzas_por_procedimiento.COUNT">
               {dataWithCumulative.map((proc, index) => (
                 <TableRow key={proc.procedimiento}>
                   <TableCell className="font-medium text-muted-foreground">
