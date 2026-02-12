@@ -170,14 +170,18 @@ export const EvolucionCobranzaChart = ({ data, isLoading }: EvolucionCobranzaCha
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left" className="max-w-xs">
-                <p className="font-semibold mb-2">¿Qué muestra este gráfico?</p>
-                <div className="space-y-1 text-xs">
-                  <p><strong>Facturación:</strong> Total facturado por mes (área + línea)</p>
-                  <p><strong>Ticket:</strong> Promedio por turno (área + línea)</p>
-                  <p><strong>Tasa Cobranza:</strong> % cobrado vs facturado</p>
+                <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                <p className="text-xs text-muted-foreground">
+                  Visualiza la evolución mensual de facturación, ticket promedio y tasa de cobranza para identificar tendencias y estacionalidad.
+                </p>
+                <p className="text-xs font-medium mt-2 mb-1">¿Cómo se calcula?</p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p><strong>Facturación:</strong> SUM(revenue_facturado) por mes</p>
+                  <p><strong>Ticket:</strong> SUM(revenue) / SUM(turnos_con_revenue)</p>
+                  <p><strong>Tasa:</strong> (turnos_con_revenue / turnos_asistidos) × 100</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                  Vista: finanzas_diario
+                <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                  📊 Vista: dashboard.finanzas_diario
                 </p>
               </TooltipContent>
             </UITooltip>

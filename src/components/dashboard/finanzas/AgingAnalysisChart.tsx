@@ -71,16 +71,20 @@ export const AgingAnalysisChart = ({ data, isLoading }: AgingAnalysisChartProps)
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left" className="max-w-xs">
-                <p className="font-semibold mb-2">¿Cómo interpretar?</p>
-                <div className="space-y-1 text-xs">
+                <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                <p className="text-xs text-muted-foreground">
+                  Distribuye la deuda según los días transcurridos desde la última visita del cliente. A mayor antigüedad, mayor riesgo de incobrabilidad.
+                </p>
+                <p className="text-xs font-medium mt-2 mb-1">¿Cómo se interpreta?</p>
+                <div className="space-y-1 text-xs text-muted-foreground">
                   <p>🟢 0-30 días: Reciente, bajo riesgo</p>
                   <p>🟡 31-60 días: Requiere seguimiento</p>
                   <p>🟠 61-90 días: Riesgo medio, contactar</p>
                   <p>🔴 91-180 días: Alto riesgo, acción necesaria</p>
                   <p>⚫ +180 días: Crítico, recupero difícil</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                  Vista: finanzas_deuda_aging
+                <p className="text-xs text-blue-600 mt-2 pt-2 border-t border-border font-mono">
+                  📊 Vista: dashboard.finanzas_deuda_aging
                 </p>
               </TooltipContent>
             </UITooltip>
