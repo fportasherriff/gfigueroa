@@ -95,7 +95,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
                 Conversión = (cantidad_etapa_actual / cantidad_etapa_anterior) × 100
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 dashboard.comercial_embudo
+                📊 Vista: dashboard.comercial_embudo
               </p>
             </TooltipContent>
           </Tooltip>

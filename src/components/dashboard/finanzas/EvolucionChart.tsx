@@ -122,7 +122,7 @@ export const EvolucionChart = ({ data, isLoading }: EvolucionChartProps) => {
                 Barras: SUM(revenue_facturado) por mes | Línea: (turnos_con_revenue / turnos_asistidos) × 100
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 dashboard.finanzas_diario
+                📊 Vista: dashboard.finanzas_diario
               </p>
             </TooltipContent>
           </Tooltip>

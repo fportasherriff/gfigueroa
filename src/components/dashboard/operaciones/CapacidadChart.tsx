@@ -68,7 +68,7 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
                 Ocupación = (turnos_agendados / capacidad_estimada) × 100
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 dashboard.operaciones_capacidad
+                📊 Vista: dashboard.operaciones_capacidad
               </p>
             </TooltipContent>
           </Tooltip>

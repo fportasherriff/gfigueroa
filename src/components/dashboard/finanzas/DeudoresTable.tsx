@@ -133,7 +133,7 @@ export const DeudoresTable = ({ data, isLoading }: DeudoresTableProps) => {
                     Prioridad = f(deuda, LTV, días sin pago)
                   </p>
                   <p className="text-xs text-blue-600 mt-2 font-mono">
-                    📊 dashboard.finanzas_deudores
+                    📊 Vista: dashboard.finanzas_deudores
                   </p>
                 </TooltipContent>
               </Tooltip>

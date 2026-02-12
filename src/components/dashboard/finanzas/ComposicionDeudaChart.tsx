@@ -148,7 +148,7 @@ export const ComposicionDeudaChart = ({
                     Deuda Promedio = Deuda Total / Clientes con deuda | Ratio = (Deuda Total / Facturación) × 100
                   </p>
                   <p className="text-xs text-blue-600 mt-2 font-mono">
-                    📊 dashboard.finanzas_recupero_master
+                    📊 Vista: dashboard.finanzas_recupero_master
                   </p>
                 </TooltipContent>
               </UITooltip>
@@ -200,7 +200,7 @@ export const ComposicionDeudaChart = ({
                     🟢 0-30d: Bajo riesgo | 🟡 31-60d: Seguimiento | 🟠 61-90d: Medio | 🔴 91-180d: Alto | ⚫ +180d: Crítico
                   </p>
                   <p className="text-xs text-blue-600 mt-2 font-mono">
-                    📊 dashboard.finanzas_deuda_aging
+                    📊 Vista: dashboard.finanzas_deuda_aging
                   </p>
                 </TooltipContent>
               </UITooltip>

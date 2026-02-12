@@ -90,7 +90,7 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
                 Conv% = (convertidos / leads) × 100 | Rev/Lead = revenue / leads
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 dashboard.comercial_canales
+                📊 Vista: dashboard.comercial_canales
               </p>
             </TooltipContent>
           </Tooltip>
