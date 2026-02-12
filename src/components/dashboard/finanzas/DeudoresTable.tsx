@@ -112,9 +112,32 @@ export const DeudoresTable = ({ data, isLoading }: DeudoresTableProps) => {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">TOP 20 Deudores</CardTitle>
-            <CardDescription>Clientes con mayor deuda pendiente</CardDescription>
+          <div className="flex items-center gap-2">
+            <div>
+              <CardTitle className="text-lg">TOP 20 Deudores</CardTitle>
+              <CardDescription>Clientes con mayor deuda pendiente</CardDescription>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-semibold mb-2">¿Para qué sirve?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Lista los 20 clientes con mayor deuda pendiente, ordenados por monto, para priorizar acciones de recupero.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                    Prioridad = f(deuda, LTV, días sin pago)
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2 font-mono">
+                    📊 dashboard.finanzas_deudores
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3">

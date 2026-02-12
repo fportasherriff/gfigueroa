@@ -68,10 +68,33 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Rendimiento por Canal</CardTitle>
-        <CardDescription>
-          Métricas de conversión y revenue por origen de leads
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg">Rendimiento por Canal</CardTitle>
+            <CardDescription>
+              Métricas de conversión y revenue por origen de leads
+            </CardDescription>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
+              <p className="text-xs text-muted-foreground">
+                Compara el rendimiento de cada canal de adquisición para optimizar inversión en marketing y esfuerzo comercial.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                Conv% = (convertidos / leads) × 100 | Rev/Lead = revenue / leads
+              </p>
+              <p className="text-xs text-blue-600 mt-2 font-mono">
+                📊 dashboard.comercial_canales
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
