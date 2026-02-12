@@ -62,16 +62,19 @@ export const KPICard = ({
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
-              <p className="font-medium mb-1">{title}</p>
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
               <p className="text-xs text-muted-foreground">{tooltip.description}</p>
               {tooltip.calculation && (
-                <p className="text-xs text-muted-foreground mt-1 font-mono bg-muted/50 p-1 rounded">
-                  {tooltip.calculation}
-                </p>
+                <>
+                  <p className="text-xs font-medium mt-2 mb-1">¿Cómo se calcula?</p>
+                  <p className="text-xs text-muted-foreground font-mono bg-muted/50 p-1 rounded">
+                    {tooltip.calculation}
+                  </p>
+                </>
               )}
               {tooltip.source && (
                 <p className="text-xs text-blue-600 mt-2 font-mono">
-                  📊 {tooltip.source}
+                  📊 Vista: {tooltip.source}
                 </p>
               )}
             </TooltipContent>
