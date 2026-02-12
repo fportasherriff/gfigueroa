@@ -160,6 +160,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      query_materialized_view: {
+        Args: { schema_name: string; view_name: string }
+        Returns: {
+          count: number
+        }[]
+      }
       raw_snapshot_replace: {
         Args: { rows: Json; table_key: string }
         Returns: Json

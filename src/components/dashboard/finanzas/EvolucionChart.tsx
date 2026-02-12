@@ -6,11 +6,13 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import { ChartSkeleton } from '../DashboardStates';
 import { formatCurrency, formatMonthYear } from '@/lib/formatters';
 import type { FinanzasDiario } from '@/types/dashboard';
@@ -103,7 +105,28 @@ export const EvolucionChart = ({ data, isLoading }: EvolucionChartProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Evolución Mensual</CardTitle>
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-lg">Evolución Mensual</CardTitle>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
+              <p className="text-xs text-muted-foreground">
+                Visualiza la evolución mensual de facturación, cobrado y tasa de cobro para identificar tendencias y estacionalidad.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                Barras: SUM(revenue_facturado) por mes | Línea: (turnos_con_revenue / turnos_asistidos) × 100
+              </p>
+              <p className="text-xs text-blue-600 mt-2 font-mono">
+                📊 dashboard.finanzas_diario
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-80">
@@ -130,7 +153,7 @@ export const EvolucionChart = ({ data, isLoading }: EvolucionChartProps) => {
                 className="text-xs"
                 stroke="hsl(var(--muted-foreground))"
               />
-              <Tooltip content={<CustomTooltip />} />
+              <RechartsTooltip content={<CustomTooltip />} />
               <Legend />
               <Bar 
                 yAxisId="left"

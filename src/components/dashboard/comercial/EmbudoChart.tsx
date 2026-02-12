@@ -73,10 +73,33 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Embudo de Conversión</CardTitle>
-        <CardDescription>
-          Flujo de leads a clientes recurrentes
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg">Embudo de Conversión</CardTitle>
+            <CardDescription>
+              Flujo de leads a clientes recurrentes
+            </CardDescription>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
+              <p className="text-xs text-muted-foreground">
+                Visualiza el funnel de ventas desde Lead hasta Cliente Recurrente para identificar en qué etapa se pierden más prospectos.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                Conversión = (cantidad_etapa_actual / cantidad_etapa_anterior) × 100
+              </p>
+              <p className="text-xs text-blue-600 mt-2 font-mono">
+                📊 dashboard.comercial_embudo
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Funnel visualization */}

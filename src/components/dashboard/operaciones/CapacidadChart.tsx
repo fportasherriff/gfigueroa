@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
 import { formatNumber, formatPercent, formatCurrency } from '@/lib/formatters';
 import type { OperacionesCapacidad } from '@/types/dashboard';
@@ -44,10 +46,33 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Capacidad por Profesional</CardTitle>
-        <CardDescription>
-          Nivel de ocupación y alertas por profesional
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg">Capacidad por Profesional</CardTitle>
+            <CardDescription>
+              Nivel de ocupación y alertas por profesional
+            </CardDescription>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-semibold mb-2">¿Para qué sirve?</p>
+              <p className="text-xs text-muted-foreground">
+                Muestra el nivel de ocupación estimado de cada profesional para detectar sobrecarga o subutilización de agenda.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 p-1 rounded">
+                Ocupación = (turnos_agendados / capacidad_estimada) × 100
+              </p>
+              <p className="text-xs text-blue-600 mt-2 font-mono">
+                📊 dashboard.operaciones_capacidad
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {data.slice(0, 10).map((profesional) => {
