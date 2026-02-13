@@ -104,7 +104,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientFrom="from-blue-400"
         gradientTo="to-blue-600"
         valueColor="text-blue-600"
-        dataValidation="dashboard.finanzas_diario.revenue_facturado"
+        dataValidation="dashboard.finanzas_diario.revenue_facturado.SUM"
         tooltip={{
           title: "¿Qué es?",
           content: "Total facturado en procedimientos médicos registrados en turnos con estado 'Asistido'",
@@ -151,7 +151,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientFrom="from-orange-400"
         gradientTo="to-orange-600"
         valueColor="text-orange-600"
-        dataValidation="dashboard.finanzas_recupero_master.deuda_tqp"
+        dataValidation="dashboard.finanzas_recupero_master.deuda_tqp.SUM"
         tooltip={{
           title: "¿Qué es TQP?",
           content: "Procedimientos médicos facturados pendientes de cobro.\nTQP = 'Tiene Que Pagar' - Lo que rastreamos en el sistema de turnos",
@@ -167,7 +167,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientFrom="from-red-400"
         gradientTo="to-red-600"
         valueColor="text-red-600"
-        dataValidation="dashboard.finanzas_recupero_master.deuda_total"
+        dataValidation="dashboard.finanzas_recupero_master.deuda_total.SUM"
         tooltip={{
           title: "¿Qué incluye?",
           content: `Deuda Total = Procedimientos + Extras\n• Procedimientos (TQP): ${formatCurrency(kpis.deudaTQP)}\n• Extras: ${formatCurrency(kpis.deudaTotal - kpis.deudaTQP)} (productos, paquetes, servicios)\n\nLos "extras" son items vendidos que no se registran en el sistema de turnos médicos.`,
