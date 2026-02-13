@@ -93,7 +93,7 @@ export const AgingAnalysisChart = ({ data, isLoading }: AgingAnalysisChartProps)
       </CardHeader>
       <CardContent>
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%" data-validation="dashboard.finanzas_deuda_aging.deuda_total">
+          <ResponsiveContainer width="100%" height="100%" data-validation="dashboard.finanzas_deuda_aging.deuda_total.SUM">
             <BarChart 
               data={data} 
               layout="vertical"

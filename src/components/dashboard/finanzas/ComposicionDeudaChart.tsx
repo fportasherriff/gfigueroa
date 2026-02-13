@@ -94,7 +94,7 @@ export const ComposicionDeudaChart = ({
         </CardHeader>
         <CardContent>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%" data-validation="dashboard.finanzas_recupero_master.deuda_total">
+            <ResponsiveContainer width="100%" height="100%" data-validation="dashboard.finanzas_recupero_master.deuda_total.SUM">
               <PieChart>
                 <Pie
                   data={chartData}
