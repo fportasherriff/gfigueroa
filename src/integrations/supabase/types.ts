@@ -149,6 +149,12 @@ export type Database = {
     Functions: {
       execute_select: { Args: { query: string }; Returns: Json }
       execute_sql: { Args: { query: string }; Returns: Json }
+      execute_sql_query: {
+        Args: { query_text: string }
+        Returns: {
+          result: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
