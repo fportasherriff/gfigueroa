@@ -56,9 +56,14 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
   'saldos': {
     label: 'Saldos',
     required: true,
-    // Columnas únicas: NroCliente, Proximo Turno, TQP
     signatureColumns: ['NroCliente', 'Proximo Turno', 'TQP'],
     allColumns: ['NroCliente', 'Cliente', 'Saldo', 'TQP', 'Proximo Turno']
+  },
+  'tratamientos_reporte': {
+    label: 'Reporte de Tratamientos',
+    required: true,
+    signatureColumns: ['ASEID', 'Realizadas', 'Restantes'],
+    allColumns: ['ID', 'Nombre y Apellido', 'ASEID', 'Procedimiento', 'Sesiones', 'Realizadas', 'Restantes', 'Estado', 'Ultima Sesion', 'Proximo Turno', 'Saldo', 'Sucursal Compra']
   }
 }
 
@@ -323,7 +328,8 @@ serve(async (req: Request) => {
       'cartera_pasiva': ['fact_cartera_pasiva'],
       'listado_clientes': ['dim_clientes', 'dim_origen'],
       'leads': ['fact_leads'],
-      'saldos': [] // saldos puede no tener vista específica, o agregarla si existe
+      'saldos': [], // saldos puede no tener vista específica, o agregarla si existe
+      'tratamientos_reporte': ['fact_tratamientos']
     };
 
     const viewsToRefresh = viewMapping[detectedType] || [];
