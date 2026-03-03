@@ -71,18 +71,22 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
 function detectTableType(headers: string[]): string | null {
   const normalizedHeaders = headers.map(h => h.trim().toLowerCase());
   
+  let bestMatch: string | null = null;
+  let bestCount = 0;
+
   for (const [tableKey, config] of Object.entries(TABLE_DEFINITIONS)) {
     const signatureLower = config.signatureColumns.map(c => c.toLowerCase());
     const matchCount = signatureLower.filter(sig => 
-      normalizedHeaders.some(h => h.includes(sig) || sig.includes(h))
+      normalizedHeaders.some(h => h === sig)
     ).length;
     
-    if (matchCount >= 2) {
-      return tableKey;
+    if (matchCount > bestCount) {
+      bestCount = matchCount;
+      bestMatch = tableKey;
     }
   }
   
-  return null;
+  return bestCount >= 2 ? bestMatch : null;
 }
 
 // Función para detectar el delimitador del CSV (coma o punto y coma)
