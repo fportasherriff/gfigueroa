@@ -176,6 +176,7 @@ export type Database = {
         Args: { rows: Json; table_key: string }
         Returns: Json
       }
+      refresh_all_analytics: { Args: never; Returns: Json }
       refresh_view: { Args: { view_name: string }; Returns: Json }
     }
     Enums: {

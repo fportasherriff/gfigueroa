@@ -16,6 +16,7 @@ const downloadInstructions: Record<string, string> = {
   leads: "En SIAP: Reportes → Leads. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
   listado_clientes: "En SIAP: Reportes → Listado Clientes. Importante: usá fecha desde 01/01/2020 o anterior para incluir todo el historial.",
   saldos: "En SIAP: Reportes → Saldos. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
+  tratamientos_reporte: "En SIAP: Reportes → Tratamientos. Seleccioná el rango de fechas a analizar. Descargá sin modificar filtros.",
 };
 
 const initialCsvFiles: CsvFile[] = [
@@ -55,6 +56,14 @@ const initialCsvFiles: CsvFile[] = [
     id: "saldos",
     name: "Saldos",
     description: "Estado de cuenta y saldos de clientes",
+    lastUpdated: null,
+    status: "idle",
+    progress: 0,
+  },
+  {
+    id: "tratamientos_reporte",
+    name: "Reporte de Tratamientos",
+    description: "exportTratamientosReporte.csv",
     lastUpdated: null,
     status: "idle",
     progress: 0,
@@ -333,7 +342,7 @@ export default function CsvUpload() {
           <div>
             <p className="text-sm font-medium text-foreground">¿Cómo funciona?</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Descargá los archivos CSV desde SIAP y súbilos aquí. Cada tarjeta tiene un ícono <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted text-muted-foreground text-xs font-medium">i</span> que te indica cómo descargar ese reporte específico. Una vez cargados los 5 archivos, podrás actualizar el dashboard con los nuevos datos.
+              Descargá los archivos CSV desde SIAP y súbilos aquí. Cada tarjeta tiene un ícono <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted text-muted-foreground text-xs font-medium">i</span> que te indica cómo descargar ese reporte específico. Una vez cargados los 6 archivos, podrás actualizar el dashboard con los nuevos datos.
             </p>
           </div>
         </CardContent>
@@ -382,7 +391,7 @@ export default function CsvUpload() {
       </Card>
 
       {/* CSV Upload Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {csvFiles.map((csvFile) => (
           <CsvUploadCard
             key={csvFile.id}
