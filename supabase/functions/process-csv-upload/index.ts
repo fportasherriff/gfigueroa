@@ -258,7 +258,7 @@ serve(async (req: Request) => {
     // En este proyecto, las tablas existen en el schema "raw" y las columnas
     // conservan los nombres originales del CSV (con espacios, puntos, etc.).
     // Por eso, NO convertimos a snake_case; insertamos usando los nombres exactos.
-    const normalizeCol = (s: string) => s.trim().toLowerCase();
+    const normalizeCol = (s: string) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const allowedColumnMap = new Map<string, string>(
       tableConfig.allColumns.map((c) => [normalizeCol(c), c])
     );
