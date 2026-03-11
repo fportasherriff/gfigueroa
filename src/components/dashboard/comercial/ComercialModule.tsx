@@ -42,10 +42,21 @@ export const ComercialModule = () => {
       </div>
 
       {/* Context block */}
-      <div className="text-sm text-muted-foreground bg-muted/40 rounded-lg px-4 py-3 border border-border/50">
-        <span className="font-medium text-foreground">¿Qué muestra esta sección?</span>
-        {" "}Seguimiento del ciclo de vida comercial: desde que un cliente se registra hasta que se vuelve recurrente.
-        Los porcentajes siempre son sobre el total de clientes del canal — no hay tasas mayores al 100%.
+      <div className="bg-muted/40 rounded-lg px-4 py-4 border border-border/50 space-y-2">
+        <p className="text-sm font-semibold text-foreground">
+          📊 Panel Comercial — ¿Cuántos clientes realmente se activan?
+        </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Este panel muestra el recorrido real de cada cliente: cuántos se registraron, cuántos vinieron a atenderse, cuántos pagaron y cuántos volvieron más de dos veces.
+        </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Los <span className="font-medium text-green-600">números en verde</span> están dentro de lo esperado.{" "}
+          Los <span className="font-medium text-yellow-600">amarillos</span> requieren atención.{" "}
+          Los <span className="font-medium text-red-600">rojos</span> indican una oportunidad concreta de mejora.
+        </p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Usá el filtro de canal para ver cómo rinde cada fuente de captación — Instagram, Facebook, referidos — y decidir dónde enfocar el esfuerzo comercial.
+        </p>
       </div>
 
       {/* KPIs Grid */}
