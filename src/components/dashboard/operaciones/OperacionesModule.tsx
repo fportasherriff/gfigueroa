@@ -162,7 +162,7 @@ export const OperacionesModule = () => {
 
       {/* Evolution Charts */}
       <OperacionesEvolucion 
-        data={operacionesData || []}
+        data={operacionesData}
         isLoading={operacionesLoading}
       />
 

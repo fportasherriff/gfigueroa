@@ -52,7 +52,7 @@ export const FinanzasModuleV2 = () => {
   };
 
   // Data hooks
-  const { kpis, isLoading: kpisLoading, diarioData } = useFinanzasKPIs(filters);
+  const { kpis, anteriorKpis, isLoading: kpisLoading, diarioData } = useFinanzasKPIs(filters);
   const { data: recuperoData, isLoading: recuperoLoading } = useFinanzasRecuperoMaster();
   const { data: agingData, isLoading: agingLoading } = useFinanzasDeudaAging();
   const { data: prioridadesData, isLoading: prioridadesLoading } = useFinanzasPrioridades();

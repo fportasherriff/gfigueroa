@@ -119,7 +119,18 @@ export const useFinanzasKPIs = (filters?: {
   fechaHasta?: string;
   sucursal?: string;
 }) => {
+  // Compute anterior period filters
+  const anteriorFilters = useMemo(() => {
+    if (!filters?.fechaDesde || !filters?.fechaHasta) return undefined;
+    return {
+      fechaDesde: format(subMonths(parseISO(filters.fechaDesde), 1), 'yyyy-MM-dd'),
+      fechaHasta: format(subMonths(parseISO(filters.fechaHasta), 1), 'yyyy-MM-dd'),
+      sucursal: filters.sucursal,
+    };
+  }, [filters?.fechaDesde, filters?.fechaHasta, filters?.sucursal]);
+
   const { data: diarioData, isLoading: diarioLoading } = useFinanzasDiarioV2(filters);
+  const { data: anteriorDiarioData, isLoading: anteriorLoading } = useFinanzasDiarioV2(anteriorFilters);
   const { data: recuperoData, isLoading: recuperoLoading } = useFinanzasRecuperoMaster();
 
   const isLoading = diarioLoading || recuperoLoading;
@@ -148,12 +159,22 @@ export const useFinanzasKPIs = (filters?: {
     ? ((kpis.revenueTotal - kpis.deudaTQP) / kpis.revenueTotal) * 100 
     : 0;
 
+  // Anterior period KPIs (revenue-based only)
+  const anteriorRevenueTotal = anteriorDiarioData?.reduce((sum, r) => sum + (Number(r.revenue_facturado) || 0), 0) || 0;
+  const anteriorTurnosTotales = anteriorDiarioData?.reduce((sum, r) => sum + (Number(r.turnos_con_revenue) || 0), 0) || 0;
+  const anteriorTicketPromedio = anteriorTurnosTotales > 0 ? anteriorRevenueTotal / anteriorTurnosTotales : 0;
+
   return {
     isLoading,
     kpis: {
       ...kpis,
       ticketPromedio,
-      tasaCobro: Math.min(100, Math.max(0, tasaCobro)), // Clamp between 0-100
+      tasaCobro: Math.min(100, Math.max(0, tasaCobro)),
+    },
+    anteriorKpis: {
+      revenueTotal: anteriorRevenueTotal,
+      tasaCobro: 0, // No historical debt data to compute anterior tasa
+      ticketPromedio: anteriorTicketPromedio,
     },
     diarioData,
     recuperoData,

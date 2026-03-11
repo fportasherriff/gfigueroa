@@ -111,18 +111,31 @@ export const useOperacionesDiario = (filters?: {
       const fechaDesde = filters?.fechaDesde || ranges.last12Months.from;
       const fechaHasta = filters?.fechaHasta || ranges.last12Months.to;
       
-      let sql = `SELECT * FROM dashboard.operaciones_diario WHERE fecha >= '${fechaDesde}' AND fecha <= '${fechaHasta}'`;
+      // Período anterior: mismo rango de días, -1 mes exacto
+      const anteriorDesde = format(subMonths(parseISO(fechaDesde), 1), 'yyyy-MM-dd');
+      const anteriorHasta = format(subMonths(parseISO(fechaHasta), 1), 'yyyy-MM-dd');
+      
+      let sqlActual = `SELECT * FROM dashboard.operaciones_diario WHERE fecha >= '${fechaDesde}' AND fecha <= '${fechaHasta}'`;
+      let sqlAnterior = `SELECT * FROM dashboard.operaciones_diario WHERE fecha >= '${anteriorDesde}' AND fecha <= '${anteriorHasta}'`;
 
       if (filters?.sucursal) {
-        sql += ` AND sucursal = '${filters.sucursal}'`;
+        sqlActual += ` AND sucursal = '${filters.sucursal}'`;
+        sqlAnterior += ` AND sucursal = '${filters.sucursal}'`;
       }
       if (filters?.profesional) {
-        sql += ` AND profesional = '${filters.profesional}'`;
+        sqlActual += ` AND profesional = '${filters.profesional}'`;
+        sqlAnterior += ` AND profesional = '${filters.profesional}'`;
       }
 
-      sql += ` ORDER BY fecha ASC`;
+      sqlActual += ` ORDER BY fecha ASC`;
+      sqlAnterior += ` ORDER BY fecha ASC`;
 
-      return queryDashboardView<OperacionesDiario>(sql);
+      const [actual, anterior] = await Promise.all([
+        queryDashboardView<OperacionesDiario>(sqlActual),
+        queryDashboardView<OperacionesDiario>(sqlAnterior),
+      ]);
+
+      return { actual, anterior };
     },
     staleTime: 5 * 60 * 1000,
   });
