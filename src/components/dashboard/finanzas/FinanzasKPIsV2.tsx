@@ -16,6 +16,11 @@ interface FinanzasKPIsV2Props {
     clientesTQP: number;
     clientesCriticos: number;
   };
+  anteriorKpis?: {
+    revenueTotal: number;
+    tasaCobro: number;
+    ticketPromedio: number;
+  };
   isLoading: boolean;
 }
 
@@ -28,6 +33,7 @@ interface KPICardProps {
   gradientTo: string;
   valueColor: string;
   dataValidation?: string;
+  delta?: React.ReactNode;
   tooltip: {
     title: string;
     content: string;
@@ -35,7 +41,28 @@ interface KPICardProps {
   };
 }
 
-const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, valueColor, dataValidation, tooltip }: KPICardProps) => (
+const DeltaBadge = ({ actual, anterior, invertido = false }: { 
+  actual: number; 
+  anterior: number; 
+  invertido?: boolean;
+}) => {
+  if (!anterior || anterior === 0) return null;
+  const delta = ((actual - anterior) / anterior) * 100;
+  const esMejora = invertido ? delta < 0 : delta > 0;
+  const esNeutro = Math.abs(delta) < 0.5;
+
+  if (esNeutro) return (
+    <span className="text-xs text-muted-foreground">→ Sin cambio</span>
+  );
+
+  return (
+    <span className={`text-xs font-medium ${esMejora ? 'text-green-600' : 'text-red-500'}`}>
+      {delta > 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}% vs mes ant.
+    </span>
+  );
+};
+
+const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, valueColor, dataValidation, delta, tooltip }: KPICardProps) => (
   <Card className="border-none shadow-sm hover:shadow-md transition-shadow h-full">
     <CardContent className="p-4 flex flex-col h-full">
       <div className="flex items-start justify-between mb-3">
@@ -65,6 +92,7 @@ const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, value
       <p className={`text-3xl font-bold ${valueColor}`} {...(dataValidation ? { 'data-validation': dataValidation } : {})}>{value}</p>
       <div className="flex-1">
         {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        {delta && <div className="mt-1">{delta}</div>}
       </div>
       
       {/* Bottom gradient bar - always at bottom */}
@@ -75,7 +103,7 @@ const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, value
   </Card>
 );
 
-export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
+export const FinanzasKPIsV2 = ({ kpis, anteriorKpis, isLoading }: FinanzasKPIsV2Props) => {
   if (isLoading) {
     return <KPIGridSkeleton count={6} />;
   }
@@ -105,6 +133,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientTo="to-blue-600"
         valueColor="text-blue-600"
         dataValidation="dashboard.finanzas_diario.revenue_facturado.SUM"
+        delta={<DeltaBadge actual={kpis.revenueTotal} anterior={anteriorKpis?.revenueTotal ?? 0} />}
         tooltip={{
           title: "¿Qué es?",
           content: "Total facturado en procedimientos médicos registrados en turnos con estado 'Asistido'",
@@ -120,6 +149,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientFrom={tasaGradient.from}
         gradientTo={tasaGradient.to}
         valueColor={getTasaCobroColor(kpis.tasaCobro)}
+        delta={<DeltaBadge actual={kpis.tasaCobro} anterior={anteriorKpis?.tasaCobro ?? 0} />}
         tooltip={{
           title: "¿Cómo se calcula?",
           content: "Fórmula: ((Revenue - Deuda TQP) / Revenue) × 100",
@@ -135,6 +165,7 @@ export const FinanzasKPIsV2 = ({ kpis, isLoading }: FinanzasKPIsV2Props) => {
         gradientFrom="from-purple-400"
         gradientTo="to-purple-600"
         valueColor="text-purple-600"
+        delta={<DeltaBadge actual={kpis.ticketPromedio} anterior={anteriorKpis?.ticketPromedio ?? 0} />}
         tooltip={{
           title: "¿Qué representa?",
           content: "Valor promedio facturado por turno. Solo considera turnos con revenue > 0",

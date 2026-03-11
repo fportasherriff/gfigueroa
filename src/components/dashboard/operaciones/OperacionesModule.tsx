@@ -33,12 +33,14 @@ export const OperacionesModule = () => {
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
   
-  const { data: operacionesData, isLoading: operacionesLoading, error: operacionesError, refetch: refetchOperaciones } = useOperacionesDiario({
+  const { data: operacionesResult, isLoading: operacionesLoading, error: operacionesError, refetch: refetchOperaciones } = useOperacionesDiario({
     fechaDesde: format(dateFrom, 'yyyy-MM-dd'),
     fechaHasta: format(dateTo, 'yyyy-MM-dd'),
     sucursal: sucursalFilter === 'all' ? undefined : sucursalFilter,
     profesional: profesionalFilter === 'all' ? undefined : profesionalFilter,
   });
+  const operacionesData = operacionesResult?.actual || [];
+  const operacionesAnterior = operacionesResult?.anterior || [];
   const { data: heatmapData, isLoading: heatmapLoading } = useOperacionesHeatmap({
     sucursal: sucursalFilter === 'all' ? undefined : sucursalFilter,
     profesional: profesionalFilter === 'all' ? undefined : profesionalFilter,
@@ -153,13 +155,14 @@ export const OperacionesModule = () => {
 
       {/* KPIs Grid */}
       <OperacionesKPIs 
-        operacionesData={operacionesData || []}
+        operacionesData={operacionesData}
+        anteriorData={operacionesAnterior}
         isLoading={operacionesLoading}
       />
 
       {/* Evolution Charts */}
       <OperacionesEvolucion 
-        data={operacionesData || []}
+        data={operacionesData}
         isLoading={operacionesLoading}
       />
 

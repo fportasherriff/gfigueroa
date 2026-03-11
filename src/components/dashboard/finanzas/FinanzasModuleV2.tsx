@@ -52,7 +52,7 @@ export const FinanzasModuleV2 = () => {
   };
 
   // Data hooks
-  const { kpis, isLoading: kpisLoading, diarioData } = useFinanzasKPIs(filters);
+  const { kpis, anteriorKpis, isLoading: kpisLoading, diarioData } = useFinanzasKPIs(filters);
   const { data: recuperoData, isLoading: recuperoLoading } = useFinanzasRecuperoMaster();
   const { data: agingData, isLoading: agingLoading } = useFinanzasDeudaAging();
   const { data: prioridadesData, isLoading: prioridadesLoading } = useFinanzasPrioridades();
@@ -209,7 +209,7 @@ export const FinanzasModuleV2 = () => {
       </div>
 
       {/* KPIs Grid - 6 cards minimalistas */}
-      <FinanzasKPIsV2 kpis={kpis} isLoading={kpisLoading} />
+      <FinanzasKPIsV2 kpis={kpis} anteriorKpis={anteriorKpis} isLoading={kpisLoading} />
 
       {/* Evolution Chart - Tabs Revenue/Ticket */}
       <EvolucionCobranzaChart data={diarioData || []} isLoading={kpisLoading} />

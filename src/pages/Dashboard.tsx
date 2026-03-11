@@ -17,7 +17,7 @@ export default function Dashboard() {
   
   // Check if we have data
   const { data: finanzasData, isLoading } = useFinanzasDiario();
-  const hasData = (finanzasData?.length ?? 0) > 0;
+  const hasData = (finanzasData?.actual?.length ?? 0) > 0;
 
   const handleRefreshDashboard = async () => {
     setIsRefreshing(true);
