@@ -43,7 +43,10 @@ export const OperacionesModule = () => {
     sucursal: sucursalFilter === 'all' ? undefined : sucursalFilter,
     profesional: profesionalFilter === 'all' ? undefined : profesionalFilter,
   });
-  const { data: capacidadData, isLoading: capacidadLoading } = useOperacionesCapacidad();
+  const { data: capacidadData, isLoading: capacidadLoading } = useOperacionesCapacidad({
+    periodoDesde: format(dateFrom, 'yyyy-MM-dd'),
+    periodoHasta: format(dateTo, 'yyyy-MM-dd'),
+  });
   const { data: sucursales } = useSucursales();
   const { data: profesionales } = useProfesionales();
 
