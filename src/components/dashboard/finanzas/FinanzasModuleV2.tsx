@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { Info, Calendar, Building, ChevronDown } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { es } from "date-fns/locale";
+import { Info, CalendarIcon, ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -33,22 +33,38 @@ import { ClientesRecuperoTable } from "./ClientesRecuperoTable";
 import { ProfesionalRendimiento } from "./ProfesionalRendimiento";
 import { TopProcedimientos } from "./TopProcedimientos";
 
-import type { DateRange } from "@/types/dashboard";
+
+
+const DATE_PRESETS = [
+  { label: 'Últimos 7 días', days: 7 },
+  { label: 'Últimos 30 días', days: 30 },
+  { label: 'Últimos 3 meses', days: 90 },
+  { label: 'Últimos 6 meses', days: 180 },
+  { label: 'Últimos 12 meses', days: 365 },
+];
 
 export const FinanzasModuleV2 = () => {
   const now = new Date();
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: startOfMonth(subMonths(now, 11)),
-    to: endOfMonth(now),
-  });
+  const defaultFrom = new Date(2025, 0, 1);
+  const defaultTo = endOfMonth(new Date());
+  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
+  const [dateTo, setDateTo] = useState<Date>(defaultTo);
   const [sucursal, setSucursal] = useState<string>("all");
   const [bannerOpen, setBannerOpen] = useState(false);
 
   // Format dates for queries
   const filters = {
-    fechaDesde: format(dateRange.from, "yyyy-MM-dd"),
-    fechaHasta: format(dateRange.to, "yyyy-MM-dd"),
+    fechaDesde: format(dateFrom, "yyyy-MM-dd"),
+    fechaHasta: format(dateTo, "yyyy-MM-dd"),
     sucursal: sucursal !== "all" ? sucursal : undefined,
+  };
+
+  const handlePresetClick = (days: number) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    setDateFrom(from);
+    setDateTo(to);
   };
 
   // Data hooks
@@ -105,107 +121,80 @@ export const FinanzasModuleV2 = () => {
       </Collapsible>
 
       {/* Global Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        {/* Date Range */}
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal min-w-[240px]",
-                  !dateRange && "text-muted-foreground",
-                )}
-              >
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, "dd/MM/yy")} - {format(dateRange.to, "dd/MM/yy")}
-                    </>
-                  ) : (
-                    format(dateRange.from, "dd/MM/yy")
-                  )
-                ) : (
-                  <span>Seleccionar fechas</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={(range) => {
-                  if (range?.from && range?.to) {
-                    setDateRange({ from: range.from, to: range.to });
-                  }
-                }}
-                numberOfMonths={2}
-                className="pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+      <div className="flex items-center gap-4 flex-wrap">
+        {/* Date Range Filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-72 justify-start text-left font-normal",
+                !dateFrom && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {format(dateFrom, 'dd MMM yyyy', { locale: es })} - {format(dateTo, 'dd MMM yyyy', { locale: es })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="p-3 border-b">
+              <div className="flex flex-wrap gap-2">
+                {DATE_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.days}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePresetClick(preset.days)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex">
+              <div className="p-3">
+                <p className="text-sm font-medium mb-2">Desde</p>
+                <CalendarComponent
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={(date) => date && setDateFrom(date)}
+                  locale={es}
+                  className="pointer-events-auto"
+                />
+              </div>
+              <div className="p-3 border-l">
+                <p className="text-sm font-medium mb-2">Hasta</p>
+                <CalendarComponent
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={(date) => date && setDateTo(date)}
+                  locale={es}
+                  className="pointer-events-auto"
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Sucursal Filter */}
-        <div className="flex items-center gap-2">
-          <Building className="h-4 w-4 text-muted-foreground" />
-          <Select value={sucursal} onValueChange={setSucursal}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sucursal" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las sucursales</SelectItem>
-              {sucursales?.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={sucursal} onValueChange={setSucursal}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Todas las sucursales" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las sucursales</SelectItem>
+            {sucursales?.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-        {/* Quick Date Presets */}
-        <div className="flex gap-2 ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setDateRange({
-                from: startOfMonth(now),
-                to: endOfMonth(now),
-              })
-            }
-          >
-            Este mes
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setDateRange({
-                from: startOfMonth(subMonths(now, 2)),
-                to: endOfMonth(now),
-              })
-            }
-          >
-            3 meses
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setDateRange({
-                from: startOfMonth(subMonths(now, 11)),
-                to: endOfMonth(now),
-              })
-            }
-          >
-            12 meses
-          </Button>
-        </div>
+      {/* Period indicator */}
+      <div className="text-sm text-muted-foreground">
+        Período seleccionado: <span className="font-medium text-foreground">{format(dateFrom, 'dd MMM yyyy', { locale: es })} - {format(dateTo, 'dd MMM yyyy', { locale: es })}</span>
       </div>
 
       {/* KPIs Grid - 6 cards minimalistas */}
