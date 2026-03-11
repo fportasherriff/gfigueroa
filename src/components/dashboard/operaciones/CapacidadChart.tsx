@@ -52,6 +52,10 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
             <CardDescription>
               Nivel de ocupación y alertas por profesional
             </CardDescription>
+            <p className="text-xs text-muted-foreground mt-1">
+              ⚠️ Esta vista muestra el mes completo de cada período — los datos no se filtran 
+              por rango de días exacto. El filtro de fecha determina qué mes se incluye.
+            </p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -107,16 +111,30 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
               </div>
 
               {/* Progress bar */}
-              <div className={`h-6 rounded-full ${getOcupacionBgColor(ocupacion)} overflow-hidden`}>
-                <div 
-                  className={`h-full rounded-full ${getOcupacionColor(ocupacion)} flex items-center justify-end pr-2 transition-all duration-500`}
-                  style={{ width: `${Math.min(ocupacion, 100)}%` }}
-                >
-                  <span className="text-xs font-medium text-white">
+              {ocupacion <= 100 ? (
+                <div className={`h-6 rounded-full ${getOcupacionBgColor(ocupacion)} overflow-hidden`}>
+                  <div 
+                    className={`h-full rounded-full ${getOcupacionColor(ocupacion)} flex items-center justify-end pr-2 transition-all duration-500`}
+                    style={{ width: `${ocupacion}%` }}
+                  >
+                    <span className="text-xs font-medium text-white">
+                      {formatPercent(ocupacion)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className={`h-6 rounded-full bg-red-100 overflow-hidden flex-1`}>
+                    <div 
+                      className="h-full rounded-full bg-red-500 transition-all duration-500"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-red-600 whitespace-nowrap">
                     {formatPercent(ocupacion)}
                   </span>
                 </div>
-              </div>
+              )}
 
               {/* Metrics row */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -144,26 +162,44 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
         })}
 
         {/* Reference guide */}
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium mb-2">Interpretación de Ocupación:</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              50-80%: Óptimo - Buena utilización sin sobrecarga
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              80-90%: Alto - Considerar redistribuir carga
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              &gt;90%: Crítico - Riesgo de burnout
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gray-300" />
-              &lt;50%: Subutilizado - Oportunidad de optimización
-            </li>
-          </ul>
+        <div className="mt-6 space-y-3">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+            <p className="text-sm font-semibold text-amber-800">
+              ⚙️ ¿Cómo se calcula la ocupación?
+            </p>
+            <p className="text-xs text-amber-700">
+              <strong>Ocupación (%) = turnos agendados ÷ (días con actividad × 8) × 100</strong>
+            </p>
+            <p className="text-xs text-amber-700">
+              El <strong>8</strong> representa la capacidad máxima estimada de turnos por día 
+              por profesional. Es un valor de referencia definido durante el desarrollo — 
+              no ha sido validado con el centro todavía.
+            </p>
+            <p className="text-xs text-amber-700 font-medium">
+              → Pendiente confirmar con el centro: ¿cuántos turnos máximos atiende 
+              cada profesional por día?
+            </p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Referencia visual (base: 8 turnos/día):
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>⚪ Menos de 50% — Agenda con baja utilización</li>
+              <li>🟢 50–80% — Carga manejable, zona óptima</li>
+              <li>🟡 80–100% — Agenda cargada, monitorear</li>
+              <li>🔴 Más de 100% — Supera la capacidad estimada (revisar con el centro)</li>
+            </ul>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Criterio de alertas:
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>⚠️ <strong>Sobrecarga</strong> — promedio de turnos por día supera 10</li>
+              <li>⚠️ <strong>Alta cancelación</strong> — tasa de cancelación supera el 30%</li>
+            </ul>
+          </div>
         </div>
       </CardContent>
     </Card>
