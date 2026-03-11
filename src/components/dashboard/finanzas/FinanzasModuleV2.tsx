@@ -36,20 +36,36 @@ import { TopProcedimientos } from "./TopProcedimientos";
 
 import type { DateRange } from "@/types/dashboard";
 
+const DATE_PRESETS = [
+  { label: 'Últimos 7 días', days: 7 },
+  { label: 'Últimos 30 días', days: 30 },
+  { label: 'Últimos 3 meses', days: 90 },
+  { label: 'Últimos 6 meses', days: 180 },
+  { label: 'Últimos 12 meses', days: 365 },
+];
+
 export const FinanzasModuleV2 = () => {
   const now = new Date();
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: startOfMonth(subMonths(now, 11)),
-    to: endOfMonth(now),
-  });
+  const defaultFrom = new Date(2025, 0, 1);
+  const defaultTo = endOfMonth(new Date());
+  const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
+  const [dateTo, setDateTo] = useState<Date>(defaultTo);
   const [sucursal, setSucursal] = useState<string>("all");
   const [bannerOpen, setBannerOpen] = useState(false);
 
   // Format dates for queries
   const filters = {
-    fechaDesde: format(dateRange.from, "yyyy-MM-dd"),
-    fechaHasta: format(dateRange.to, "yyyy-MM-dd"),
+    fechaDesde: format(dateFrom, "yyyy-MM-dd"),
+    fechaHasta: format(dateTo, "yyyy-MM-dd"),
     sucursal: sucursal !== "all" ? sucursal : undefined,
+  };
+
+  const handlePresetClick = (days: number) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    setDateFrom(from);
+    setDateTo(to);
   };
 
   // Data hooks
