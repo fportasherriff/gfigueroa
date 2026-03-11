@@ -44,7 +44,7 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
     required: true,
     // Columnas únicas: Tipo de Alta, Nacimiento, Género
     signatureColumns: ['Tipo de Alta', 'Nacimiento', 'Género'],
-    allColumns: ['ID', 'Fecha', 'Apellido y Nombre', 'Tipo de Alta', 'DNI', 'Nacimiento', 'Genero', 'Pais', 'Telefono Pais', 'Telefono', 'Celular Pais', 'Celular', 'EMail', 'Direccion', 'Codigo Postal', 'Ciudad', 'Barrio', 'Referente', 'Operador', 'Origen', 'Grupo', 'Sucursal', 'Ultimo Contacto', 'Ejecutivo', 'Obra Social', 'Numero de afiliado', 'Estado']
+    allColumns: ['ID', 'Fecha', 'Apellido y Nombre', 'Tipo de Alta', 'DNI', 'Nacimiento', 'Género', 'Pais', 'Telefono Pais', 'Telefono', 'Celular Pais', 'Celular', 'EMail', 'Direccion', 'Codigo Postal', 'Ciudad', 'Barrio', 'Referente', 'Operador', 'Origen', 'Grupo', 'Sucursal', 'Ultimo Contacto', 'Ejecutivo', 'Obra Social', 'Número de afiliado', 'Estado']
   },
   'leads': {
     label: 'Leads',
