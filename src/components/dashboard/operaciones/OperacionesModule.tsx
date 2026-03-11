@@ -155,7 +155,8 @@ export const OperacionesModule = () => {
 
       {/* KPIs Grid */}
       <OperacionesKPIs 
-        operacionesData={operacionesData || []}
+        operacionesData={operacionesData}
+        anteriorData={operacionesAnterior}
         isLoading={operacionesLoading}
       />
 
