@@ -15,39 +15,25 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
   const kpis = useMemo(() => {
     if (!embudoData.length && !canalesData.length) return null;
 
-    // Use all data for aggregation (no month filtering for now)
-    const totalLeads = canalesData.reduce((acc, d) => acc + Number(d.leads_generados || 0), 0);
-    const totalConvertidos = canalesData.reduce((acc, d) => acc + Number(d.clientes_convertidos || 0), 0);
-    const totalRevenue = canalesData.reduce((acc, d) => acc + Number(d.revenue_generado || 0), 0);
-    const totalClientesActivos = canalesData.reduce((acc, d) => acc + Number(d.clientes_activos_mes || 0), 0);
-    
-    const tasaConversion = totalLeads > 0 ? (totalConvertidos / totalLeads) * 100 : 0;
-    const revenuePorLead = totalLeads > 0 ? totalRevenue / totalLeads : 0;
-
     // Embudo aggregations
-    const leadCount = embudoData.filter(d => d.etapa === 'Lead').reduce((acc, d) => acc + Number(d.cantidad || 0), 0);
-    const consultaCount = embudoData.filter(d => d.etapa === 'Consulta').reduce((acc, d) => acc + Number(d.cantidad || 0), 0);
-    const tratamientoCount = embudoData.filter(d => d.etapa === 'Tratamiento').reduce((acc, d) => acc + Number(d.cantidad || 0), 0);
+    const totalClientes = embudoData.reduce((acc, d) => acc + Number(d.clientes_nuevos || 0), 0);
+    const totalConsulta = embudoData.reduce((acc, d) => acc + Number(d.con_primera_consulta || 0), 0);
+    const totalPago = embudoData.reduce((acc, d) => acc + Number(d.con_primer_pago || 0), 0);
+    const totalRecurrentes = embudoData.reduce((acc, d) => acc + Number(d.recurrentes || 0), 0);
+
+    const pctConsulta = totalClientes > 0 ? (totalConsulta / totalClientes) * 100 : 0;
+
+    // Canales aggregations
+    const revenueTotal = canalesData.reduce((acc, d) => acc + Number(d.revenue_total || 0), 0);
+    const totalClientesCanales = canalesData.reduce((acc, d) => acc + Number(d.total_clientes || 0), 0);
 
     return {
-      totalLeads: {
-        value: totalLeads || leadCount,
-      },
-      tasaConversion: {
-        value: tasaConversion || (leadCount > 0 ? (consultaCount / leadCount) * 100 : 0),
-      },
-      clientesConvertidos: {
-        value: totalConvertidos || consultaCount,
-      },
-      revenueTotal: {
-        value: totalRevenue,
-      },
-      revenuePorLead: {
-        value: revenuePorLead,
-      },
-      clientesActivos: {
-        value: totalClientesActivos || tratamientoCount,
-      },
+      totalClientes: totalClientes || totalClientesCanales,
+      pctConsulta,
+      totalConsulta,
+      revenueTotal,
+      revenuePorCliente: totalClientesCanales > 0 ? revenueTotal / totalClientesCanales : 0,
+      totalRecurrentes,
     };
   }, [embudoData, canalesData]);
 
@@ -60,77 +46,77 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
   }
 
   const getTasaColor = (tasa: number) => {
-    if (tasa >= 30) return 'text-green-600';
-    if (tasa >= 15) return 'text-yellow-600';
+    if (tasa >= 50) return 'text-green-600';
+    if (tasa >= 25) return 'text-yellow-600';
     return 'text-red-600';
   };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <KPICard
-        title="Total Leads"
-        value={formatNumber(kpis.totalLeads.value)}
+        title="Total Clientes"
+        value={formatNumber(kpis.totalClientes)}
         icon={<Users className="w-4 h-4" />}
         tooltip={{
-          description: "Total de leads generados en el período.",
-          calculation: "SUM(leads_generados)",
-          source: "dashboard.comercial_canales"
+          description: "Total de clientes dados de alta en el período.",
+          calculation: "SUM(clientes_nuevos)",
+          source: "dashboard.comercial_embudo"
         }}
       />
 
       <KPICard
-        title="Tasa Conversión"
-        value={formatPercent(kpis.tasaConversion.value)}
+        title="% Primera Consulta"
+        value={formatPercent(kpis.pctConsulta)}
         icon={<Target className="w-4 h-4" />}
-        colorClass={getTasaColor(kpis.tasaConversion.value)}
+        colorClass={getTasaColor(kpis.pctConsulta)}
         tooltip={{
-          description: "Porcentaje de leads que se convirtieron en clientes. Objetivo: >30%",
-          calculation: "(SUM(clientes_convertidos) / SUM(leads_generados)) × 100",
-          source: "dashboard.comercial_canales"
+          description: "Porcentaje de clientes que tuvieron al menos 1 consulta.",
+          calculation: "SUM(con_primera_consulta) / SUM(clientes_nuevos) × 100",
+          source: "dashboard.comercial_embudo"
         }}
       />
 
       <KPICard
-        title="Clientes Convertidos"
-        value={formatNumber(kpis.clientesConvertidos.value)}
+        title="Con Primera Consulta"
+        value={formatNumber(kpis.totalConsulta)}
         icon={<UserCheck className="w-4 h-4" />}
         tooltip={{
-          description: "Leads que se convirtieron en clientes con consulta.",
-          calculation: "SUM(clientes_convertidos)",
-          source: "dashboard.comercial_canales"
+          description: "Clientes que asistieron a al menos 1 turno.",
+          calculation: "SUM(con_primera_consulta)",
+          source: "dashboard.comercial_embudo"
         }}
       />
 
       <KPICard
         title="Facturación Total"
-        value={formatCurrency(kpis.revenueTotal.value)}
+        value={formatCurrency(kpis.revenueTotal)}
         icon={<DollarSign className="w-4 h-4" />}
         tooltip={{
-          description: "Ingresos totales generados por los leads convertidos.",
-          calculation: "SUM(revenue_generado)",
+          description: "Revenue total generado por todos los canales.",
+          calculation: "SUM(revenue_total)",
           source: "dashboard.comercial_canales"
         }}
       />
 
       <KPICard
-        title="Facturación/Lead"
-        value={formatCurrency(kpis.revenuePorLead.value)}
+        title="Revenue/Cliente"
+        value={formatCurrency(kpis.revenuePorCliente)}
         icon={<TrendingUp className="w-4 h-4" />}
         tooltip={{
-          description: "Ingreso promedio generado por cada lead.",
-          calculation: "SUM(revenue_generado) / SUM(leads_generados)",
+          description: "Revenue promedio por cliente.",
+          calculation: "SUM(revenue_total) / SUM(total_clientes)",
           source: "dashboard.comercial_canales"
         }}
       />
 
       <KPICard
-        title="Clientes Activos"
-        value={formatNumber(kpis.clientesActivos.value)}
+        title="Clientes Recurrentes"
+        value={formatNumber(kpis.totalRecurrentes)}
         icon={<ShoppingCart className="w-4 h-4" />}
         tooltip={{
-          description: "Clientes con actividad en el período.",
-          calculation: "SUM(clientes_activos_mes)",
-          source: "dashboard.comercial_canales"
+          description: "Clientes con 3 o más turnos asistidos.",
+          calculation: "SUM(recurrentes)",
+          source: "dashboard.comercial_embudo"
         }}
       />
     </div>

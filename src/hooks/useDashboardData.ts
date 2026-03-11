@@ -163,27 +163,15 @@ export const useOperacionesCapacidad = (filters?: {
 };
 
 // Comercial Embudo Hook
-export const useComercialEmbudo = (filters?: {
-  mesDesde?: string;
-  mesHasta?: string;
-  origen?: string;
-}) => {
-  const ranges = getDefaultDateRange();
-
+export const useComercialEmbudo = (filters?: { origen?: string }) => {
   return useQuery({
     queryKey: ['comercial-embudo', filters],
     queryFn: async () => {
-      const mesDesde = filters?.mesDesde || ranges.last12Months.from;
-      const mesHasta = filters?.mesHasta || ranges.last12Months.to;
-      
-      let sql = `SELECT * FROM dashboard.comercial_embudo WHERE mes >= '${mesDesde}' AND mes <= '${mesHasta}'`;
-
+      let sql = `SELECT * FROM dashboard.comercial_embudo WHERE 1=1`;
       if (filters?.origen) {
         sql += ` AND origen = '${filters.origen}'`;
       }
-
-      sql += ` ORDER BY mes ASC, orden_etapa ASC`;
-
+      sql += ` ORDER BY mes_alta ASC, origen ASC`;
       return queryDashboardView<ComercialEmbudo>(sql);
     },
     staleTime: 10 * 60 * 1000,
@@ -191,20 +179,11 @@ export const useComercialEmbudo = (filters?: {
 };
 
 // Comercial Canales Hook
-export const useComercialCanales = (filters?: {
-  mesDesde?: string;
-  mesHasta?: string;
-}) => {
-  const ranges = getDefaultDateRange();
-
+export const useComercialCanales = () => {
   return useQuery({
-    queryKey: ['comercial-canales', filters],
+    queryKey: ['comercial-canales'],
     queryFn: async () => {
-      const mesDesde = filters?.mesDesde || ranges.last12Months.from;
-      const mesHasta = filters?.mesHasta || ranges.last12Months.to;
-      
-      const sql = `SELECT * FROM dashboard.comercial_canales WHERE mes >= '${mesDesde}' AND mes <= '${mesHasta}' ORDER BY revenue_generado DESC`;
-
+      const sql = `SELECT * FROM dashboard.comercial_canales ORDER BY revenue_total DESC`;
       return queryDashboardView<ComercialCanales>(sql);
     },
     staleTime: 10 * 60 * 1000,
@@ -240,9 +219,9 @@ export const useOrigenes = () => {
   return useQuery({
     queryKey: ['origenes'],
     queryFn: async () => {
-      const sql = `SELECT DISTINCT origen FROM dashboard.comercial_canales WHERE origen IS NOT NULL ORDER BY origen`;
-      const data = await queryDashboardView<{ origen: string }>(sql);
-      return data.map(d => d.origen).filter(Boolean);
+      const sql = `SELECT DISTINCT canal FROM dashboard.comercial_canales WHERE canal IS NOT NULL ORDER BY canal`;
+      const data = await queryDashboardView<{ canal: string }>(sql);
+      return data.map(d => d.canal).filter(Boolean);
     },
     staleTime: 30 * 60 * 1000,
   });
