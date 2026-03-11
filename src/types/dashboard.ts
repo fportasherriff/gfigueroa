@@ -160,26 +160,32 @@ export interface OperacionesCapacidad {
 }
 
 export interface ComercialEmbudo {
-  mes: string;
+  mes_alta: string;
   origen: string;
-  etapa: 'Lead' | 'Consulta' | 'Tratamiento' | 'Recurrente';
-  orden_etapa: number;
-  cantidad: number;
+  clientes_nuevos: number;
+  con_primera_consulta: number;
+  con_primer_pago: number;
+  recurrentes: number;
+  pct_consulta: number;
+  pct_pago: number;
+  pct_recurrente: number;
+  anio: number;
+  mes_num: number;
 }
 
 export interface ComercialCanales {
-  mes: string;
-  origen: string;
-  leads_generados: number;
-  clientes_convertidos: number;
-  clientes_con_revenue: number;
-  tasa_conversion_pct: number;
-  revenue_generado: number;
-  clientes_activos_mes: number;
-  revenue_por_lead: number;
+  canal: string;
+  total_clientes: number;
+  total_leads: number;
+  clientes_con_consulta: number;
+  clientes_con_pago: number;
+  clientes_recurrentes: number;
+  revenue_total: number;
   revenue_por_cliente: number;
-  anio: number;
-  mes_num: number;
+  revenue_por_lead: number;
+  pct_con_consulta: number;
+  pct_con_pago: number;
+  pct_recurrente: number;
 }
 
 // KPI Types

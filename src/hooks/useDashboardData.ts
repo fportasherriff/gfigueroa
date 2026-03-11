@@ -240,9 +240,9 @@ export const useOrigenes = () => {
   return useQuery({
     queryKey: ['origenes'],
     queryFn: async () => {
-      const sql = `SELECT DISTINCT origen FROM dashboard.comercial_canales WHERE origen IS NOT NULL ORDER BY origen`;
-      const data = await queryDashboardView<{ origen: string }>(sql);
-      return data.map(d => d.origen).filter(Boolean);
+      const sql = `SELECT DISTINCT canal FROM dashboard.comercial_canales WHERE canal IS NOT NULL ORDER BY canal`;
+      const data = await queryDashboardView<{ canal: string }>(sql);
+      return data.map(d => d.canal).filter(Boolean);
     },
     staleTime: 30 * 60 * 1000,
   });
