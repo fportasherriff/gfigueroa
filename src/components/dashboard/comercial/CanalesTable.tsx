@@ -47,7 +47,7 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">Rendimiento por Canal</CardTitle>
-            <CardDescription>Activación y revenue real por origen de clientes</CardDescription>
+            <CardDescription>Qué tan bien convierte cada canal — % sobre el total de clientes de ese canal</CardDescription>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -97,13 +97,13 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
                 </TableCell>
                 <TableCell className="text-right font-mono">{formatNumber(row.total_clientes)}</TableCell>
                 <TableCell className="text-right">
-                  <PctBadge value={row.pct_con_consulta} thresholds={{ good: 50, warn: 25 }} />
+                  <PctBadge value={row.pct_con_consulta} thresholds={{ good: 65, warn: 45 }} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <PctBadge value={row.pct_con_pago} thresholds={{ good: 40, warn: 20 }} />
+                  <PctBadge value={row.pct_con_pago} thresholds={{ good: 18, warn: 12 }} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <PctBadge value={row.pct_recurrente} thresholds={{ good: 20, warn: 10 }} />
+                  <PctBadge value={row.pct_recurrente} thresholds={{ good: 28, warn: 18 }} />
                 </TableCell>
                 <TableCell className="text-right font-mono font-medium">
                   {formatCurrency(row.revenue_total)}
