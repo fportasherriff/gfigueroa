@@ -163,6 +163,9 @@ export const useFinanzasKPIs = (filters?: {
   const anteriorRevenueTotal = anteriorDiarioData?.reduce((sum, r) => sum + (Number(r.revenue_facturado) || 0), 0) || 0;
   const anteriorTurnosTotales = anteriorDiarioData?.reduce((sum, r) => sum + (Number(r.turnos_con_revenue) || 0), 0) || 0;
   const anteriorTicketPromedio = anteriorTurnosTotales > 0 ? anteriorRevenueTotal / anteriorTurnosTotales : 0;
+  const anteriorTasaCobro = anteriorRevenueTotal > 0
+    ? ((anteriorRevenueTotal - kpis.deudaTQP) / anteriorRevenueTotal) * 100
+    : 0;
 
   return {
     isLoading,
@@ -173,7 +176,7 @@ export const useFinanzasKPIs = (filters?: {
     },
     anteriorKpis: {
       revenueTotal: anteriorRevenueTotal,
-      tasaCobro: 0, // No historical debt data to compute anterior tasa
+      tasaCobro: Math.min(100, Math.max(0, anteriorTasaCobro)),
       ticketPromedio: anteriorTicketPromedio,
     },
     diarioData,
