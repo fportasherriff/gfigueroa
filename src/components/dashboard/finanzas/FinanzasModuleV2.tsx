@@ -209,7 +209,7 @@ export const FinanzasModuleV2 = () => {
       </div>
 
       {/* KPIs Grid - 6 cards minimalistas */}
-      <FinanzasKPIsV2 kpis={kpis} isLoading={kpisLoading} />
+      <FinanzasKPIsV2 kpis={kpis} anteriorKpis={anteriorKpis} isLoading={kpisLoading} />
 
       {/* Evolution Chart - Tabs Revenue/Ticket */}
       <EvolucionCobranzaChart data={diarioData || []} isLoading={kpisLoading} />
