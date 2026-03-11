@@ -47,7 +47,7 @@ export const CanalesTable = ({ data, isLoading }: CanalesTableProps) => {
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">Rendimiento por Canal</CardTitle>
-            <CardDescription>Activación y revenue real por origen de clientes</CardDescription>
+            <CardDescription>Qué tan bien convierte cada canal — % sobre el total de clientes de ese canal</CardDescription>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
