@@ -52,6 +52,10 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
             <CardDescription>
               Nivel de ocupación y alertas por profesional
             </CardDescription>
+            <p className="text-xs text-muted-foreground mt-1">
+              ⚠️ Esta vista muestra el mes completo de cada período — los datos no se filtran 
+              por rango de días exacto. El filtro de fecha determina qué mes se incluye.
+            </p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
