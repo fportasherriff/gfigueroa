@@ -79,6 +79,45 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4" data-validation="dashboard.operaciones_capacidad.COUNT">
+        {/* Contexto y fórmula — ANTES de la visualización */}
+        <div className="space-y-3">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+            <p className="text-sm font-semibold text-amber-800">
+              ⚙️ ¿Cómo se calcula la ocupación?
+            </p>
+            <p className="text-xs text-amber-700">
+              <strong>Ocupación (%) = turnos agendados ÷ (días con actividad × 8) × 100</strong>
+            </p>
+            <p className="text-xs text-amber-700">
+              El <strong>8</strong> representa la capacidad máxima estimada de turnos por día 
+              por profesional. Es un valor de referencia definido durante el desarrollo — 
+              no ha sido validado con el centro todavía.
+            </p>
+            <p className="text-xs text-amber-700 font-medium">
+              → Pendiente confirmar con el centro: ¿cuántos turnos máximos atiende 
+              cada profesional por día?
+            </p>
+          </div>
+
+          {/* Leyenda visual inline */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground px-1">
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-gray-300" /> &lt;50% Baja</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-green-500" /> 50–80% Óptima</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-yellow-500" /> 80–100% Cargada</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-red-500" /> &gt;100% Sobrecarga</span>
+          </div>
+
+          {/* Criterio de alertas */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground px-1">
+            <span>⚠️ <strong>Sobrecarga</strong>: prom/día &gt; 10</span>
+            <span>⚠️ <strong>Alta cancelación</strong>: cancelación &gt; 30%</span>
+          </div>
+        </div>
+
+        {/* Separador visual */}
+        <div className="border-t border-border/50" />
+
+        {/* Visualización de profesionales */}
         {data.slice(0, 10).map((profesional) => {
           const ocupacion = Number(profesional.ocupacion_estimada_pct || 0);
           
@@ -124,7 +163,7 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className={`h-6 rounded-full bg-red-100 overflow-hidden flex-1`}>
+                  <div className="h-6 rounded-full bg-red-100 overflow-hidden flex-1">
                     <div 
                       className="h-full rounded-full bg-red-500 transition-all duration-500"
                       style={{ width: '100%' }}
@@ -160,47 +199,6 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
             </div>
           );
         })}
-
-        {/* Reference guide */}
-        <div className="mt-6 space-y-3">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-            <p className="text-sm font-semibold text-amber-800">
-              ⚙️ ¿Cómo se calcula la ocupación?
-            </p>
-            <p className="text-xs text-amber-700">
-              <strong>Ocupación (%) = turnos agendados ÷ (días con actividad × 8) × 100</strong>
-            </p>
-            <p className="text-xs text-amber-700">
-              El <strong>8</strong> representa la capacidad máxima estimada de turnos por día 
-              por profesional. Es un valor de referencia definido durante el desarrollo — 
-              no ha sido validado con el centro todavía.
-            </p>
-            <p className="text-xs text-amber-700 font-medium">
-              → Pendiente confirmar con el centro: ¿cuántos turnos máximos atiende 
-              cada profesional por día?
-            </p>
-          </div>
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              Referencia visual (base: 8 turnos/día):
-            </p>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>⚪ Menos de 50% — Agenda con baja utilización</li>
-              <li>🟢 50–80% — Carga manejable, zona óptima</li>
-              <li>🟡 80–100% — Agenda cargada, monitorear</li>
-              <li>🔴 Más de 100% — Supera la capacidad estimada (revisar con el centro)</li>
-            </ul>
-          </div>
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              Criterio de alertas:
-            </p>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>⚠️ <strong>Sobrecarga</strong> — promedio de turnos por día supera 10</li>
-              <li>⚠️ <strong>Alta cancelación</strong> — tasa de cancelación supera el 30%</li>
-            </ul>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
