@@ -69,7 +69,7 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
 
 // Función para detectar el tipo de tabla basado en las columnas del CSV
 function detectTableType(headers: string[]): string | null {
-  const normalizedHeaders = headers.map(h => h.trim().toLowerCase());
+  const normalizedHeaders = headers.map(h => h.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
   
   let bestMatch: string | null = null;
   let bestCount = 0;
