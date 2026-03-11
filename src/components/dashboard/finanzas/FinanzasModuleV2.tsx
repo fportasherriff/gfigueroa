@@ -33,7 +33,7 @@ import { ClientesRecuperoTable } from "./ClientesRecuperoTable";
 import { ProfesionalRendimiento } from "./ProfesionalRendimiento";
 import { TopProcedimientos } from "./TopProcedimientos";
 
-import type { DateRange } from "@/types/dashboard";
+
 
 const DATE_PRESETS = [
   { label: 'Últimos 7 días', days: 7 },
