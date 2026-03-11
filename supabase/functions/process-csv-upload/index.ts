@@ -75,7 +75,7 @@ function detectTableType(headers: string[]): string | null {
   let bestCount = 0;
 
   for (const [tableKey, config] of Object.entries(TABLE_DEFINITIONS)) {
-    const signatureLower = config.signatureColumns.map(c => c.toLowerCase());
+    const signatureLower = config.signatureColumns.map(c => c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
     const matchCount = signatureLower.filter(sig => 
       normalizedHeaders.some(h => h === sig)
     ).length;
