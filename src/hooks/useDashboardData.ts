@@ -162,7 +162,7 @@ export const useOperacionesCapacidad = (filters?: {
   });
 };
 
-// Comercial Embudo Hook
+// Comercial Embudo Hook - Updated for new view structure
 export const useComercialEmbudo = (filters?: { origen?: string }) => {
   return useQuery({
     queryKey: ['comercial-embudo', filters],
