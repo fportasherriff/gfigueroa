@@ -9,7 +9,7 @@ import type {
   ComercialEmbudo,
   ComercialCanales,
 } from '@/types/dashboard';
-import { subMonths, startOfMonth, endOfMonth, format } from 'date-fns';
+import { subMonths, startOfMonth, endOfMonth, format, parseISO } from 'date-fns';
 
 // Helper function to query dashboard views using execute_select RPC
 const queryDashboardView = async <T>(sql: string): Promise<T[]> => {
