@@ -111,16 +111,30 @@ export const CapacidadChart = ({ data, isLoading }: CapacidadChartProps) => {
               </div>
 
               {/* Progress bar */}
-              <div className={`h-6 rounded-full ${getOcupacionBgColor(ocupacion)} overflow-hidden`}>
-                <div 
-                  className={`h-full rounded-full ${getOcupacionColor(ocupacion)} flex items-center justify-end pr-2 transition-all duration-500`}
-                  style={{ width: `${Math.min(ocupacion, 100)}%` }}
-                >
-                  <span className="text-xs font-medium text-white">
+              {ocupacion <= 100 ? (
+                <div className={`h-6 rounded-full ${getOcupacionBgColor(ocupacion)} overflow-hidden`}>
+                  <div 
+                    className={`h-full rounded-full ${getOcupacionColor(ocupacion)} flex items-center justify-end pr-2 transition-all duration-500`}
+                    style={{ width: `${ocupacion}%` }}
+                  >
+                    <span className="text-xs font-medium text-white">
+                      {formatPercent(ocupacion)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className={`h-6 rounded-full bg-red-100 overflow-hidden flex-1`}>
+                    <div 
+                      className="h-full rounded-full bg-red-500 transition-all duration-500"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-red-600 whitespace-nowrap">
                     {formatPercent(ocupacion)}
                   </span>
                 </div>
-              </div>
+              )}
 
               {/* Metrics row */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
