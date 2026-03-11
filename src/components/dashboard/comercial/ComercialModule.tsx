@@ -41,6 +41,13 @@ export const ComercialModule = () => {
         </Select>
       </div>
 
+      {/* Context block */}
+      <div className="text-sm text-muted-foreground bg-muted/40 rounded-lg px-4 py-3 border border-border/50">
+        <span className="font-medium text-foreground">¿Qué muestra esta sección?</span>
+        {" "}Seguimiento del ciclo de vida comercial: desde que un cliente se registra hasta que se vuelve recurrente.
+        Los porcentajes siempre son sobre el total de clientes del canal — no hay tasas mayores al 100%.
+      </div>
+
       {/* KPIs Grid */}
       <ComercialKPIs 
         embudoData={embudoData || []}

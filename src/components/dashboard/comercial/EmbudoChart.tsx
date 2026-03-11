@@ -12,10 +12,10 @@ interface EmbudoChartProps {
 }
 
 const STAGES = [
-  { key: 'clientes_nuevos',       pctKey: null,              label: 'Alta como cliente',       color: 'bg-slate-500',  dot: 'bg-slate-500'   },
-  { key: 'con_primera_consulta',  pctKey: 'pct_consulta',    label: 'Primera Consulta',        color: 'bg-blue-500',   dot: 'bg-blue-500'    },
-  { key: 'con_primer_pago',       pctKey: 'pct_pago',        label: 'Primer Pago',             color: 'bg-green-500',  dot: 'bg-green-500'   },
-  { key: 'recurrentes',           pctKey: 'pct_recurrente',  label: 'Recurrente (3+ turnos)',  color: 'bg-purple-500', dot: 'bg-purple-500'  },
+  { key: 'clientes_nuevos',       pctKey: null,              label: 'Alta como cliente',       hint: 'Se registraron en el sistema',       color: 'bg-slate-500',  dot: 'bg-slate-500'   },
+  { key: 'con_primera_consulta',  pctKey: 'pct_consulta',    label: 'Primera Consulta',        hint: 'Vinieron al menos una vez',           color: 'bg-blue-500',   dot: 'bg-blue-500'    },
+  { key: 'con_primer_pago',       pctKey: 'pct_pago',        label: 'Primer Pago',             hint: 'Realizaron al menos 1 pago',          color: 'bg-green-500',  dot: 'bg-green-500'   },
+  { key: 'recurrentes',           pctKey: 'pct_recurrente',  label: 'Recurrente (3+ turnos)',  hint: 'Volvieron 3 o más veces',             color: 'bg-purple-500', dot: 'bg-purple-500'  },
 ] as const;
 
 export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
@@ -50,11 +50,17 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
 
   const stages = STAGES.map(s => ({
     label:   s.label,
+    hint:    s.hint,
     color:   s.color,
     dot:     s.dot,
     value:   totals[s.key],
     pct:     s.pctKey === null ? 100 : Math.round((totals[s.key] / base) * 100 * 10) / 10,
   }));
+
+  // Dynamic summary line
+  const pctConsulta = base > 0 ? ((totals.con_primera_consulta / base) * 100).toFixed(1) : '0';
+  const pctPago = base > 0 ? ((totals.con_primer_pago / base) * 100).toFixed(1) : '0';
+  const pctRecurrente = base > 0 ? ((totals.recurrentes / base) * 100).toFixed(1) : '0';
 
   return (
     <Card>
@@ -65,6 +71,9 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
             <CardDescription>
               De cada 100 clientes que se dan de alta, ¿cuántos llegan a cada etapa?
             </CardDescription>
+            <p className="text-sm font-medium text-foreground mt-2">
+              {pctConsulta}% llegó a consulta · {pctPago}% pagó · {pctRecurrente}% es recurrente
+            </p>
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -89,7 +98,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         {stages.map((stage) => (
-          <div key={stage.label} className="space-y-2">
+          <div key={stage.label} className="space-y-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${stage.dot}`} />
@@ -110,12 +119,14 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
                 )}
               </div>
             </div>
+
+            <p className="text-xs text-muted-foreground pl-5">{stage.hint}</p>
           </div>
         ))}
 
         <div className="p-4 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
-            💡 Los porcentajes son independientes entre sí — un cliente puede tener consulta, pago y ser recurrente al mismo tiempo.
+            💡 Un cliente puede estar en múltiples etapas. El % de Pago bajo indica oportunidad de conversión.
           </p>
         </div>
       </CardContent>
