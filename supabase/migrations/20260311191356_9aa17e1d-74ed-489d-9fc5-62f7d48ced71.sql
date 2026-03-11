@@ -1,0 +1,1 @@
+ALTER TABLE raw.listado_clientes ADD COLUMN IF NOT EXISTS "Genero" text;
