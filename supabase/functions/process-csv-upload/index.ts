@@ -44,7 +44,7 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
     required: true,
     // Columnas únicas: Tipo de Alta, Nacimiento, Género
     signatureColumns: ['Tipo de Alta', 'Nacimiento', 'Género'],
-    allColumns: ['ID', 'Fecha', 'Apellido y Nombre', 'Tipo de Alta', 'DNI', 'Nacimiento', 'Género', 'Pais', 'Telefono Pais', 'Telefono', 'Celular Pais', 'Celular', 'EMail', 'Direccion', 'Codigo Postal', 'Ciudad', 'Barrio', 'Referente', 'Operador', 'Origen', 'Grupo', 'Sucursal', 'Ultimo Contacto', 'Ejecutivo', 'Obra Social', 'Número de afiliado', 'Estado']
+    allColumns: ['ID', 'Fecha', 'Apellido y Nombre', 'Tipo de Alta', 'DNI', 'Nacimiento', 'Genero', 'Pais', 'Telefono Pais', 'Telefono', 'Celular Pais', 'Celular', 'EMail', 'Direccion', 'Codigo Postal', 'Ciudad', 'Barrio', 'Referente', 'Operador', 'Origen', 'Grupo', 'Sucursal', 'Ultimo Contacto', 'Ejecutivo', 'Obra Social', 'Numero de afiliado', 'Estado']
   },
   'leads': {
     label: 'Leads',
@@ -69,13 +69,13 @@ const TABLE_DEFINITIONS: Record<string, TableDefinition> = {
 
 // Función para detectar el tipo de tabla basado en las columnas del CSV
 function detectTableType(headers: string[]): string | null {
-  const normalizedHeaders = headers.map(h => h.trim().toLowerCase());
+  const normalizedHeaders = headers.map(h => h.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
   
   let bestMatch: string | null = null;
   let bestCount = 0;
 
   for (const [tableKey, config] of Object.entries(TABLE_DEFINITIONS)) {
-    const signatureLower = config.signatureColumns.map(c => c.toLowerCase());
+    const signatureLower = config.signatureColumns.map(c => c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
     const matchCount = signatureLower.filter(sig => 
       normalizedHeaders.some(h => h === sig)
     ).length;
@@ -258,7 +258,7 @@ serve(async (req: Request) => {
     // En este proyecto, las tablas existen en el schema "raw" y las columnas
     // conservan los nombres originales del CSV (con espacios, puntos, etc.).
     // Por eso, NO convertimos a snake_case; insertamos usando los nombres exactos.
-    const normalizeCol = (s: string) => s.trim().toLowerCase();
+    const normalizeCol = (s: string) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const allowedColumnMap = new Map<string, string>(
       tableConfig.allColumns.map((c) => [normalizeCol(c), c])
     );
