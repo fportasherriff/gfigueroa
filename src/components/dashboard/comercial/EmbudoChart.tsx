@@ -14,7 +14,7 @@ interface EmbudoChartProps {
 const STAGES = [
   { key: 'clientes_nuevos',       pctKey: null,              label: 'Alta como cliente',       hint: 'Se registraron en el sistema',       color: 'bg-slate-500',  dot: 'bg-slate-500'   },
   { key: 'con_primera_consulta',  pctKey: 'pct_consulta',    label: 'Primera Consulta',        hint: 'Vinieron al menos una vez',           color: 'bg-blue-500',   dot: 'bg-blue-500'    },
-  { key: 'con_primer_pago',       pctKey: 'pct_pago',        label: 'Primer Pago',             hint: 'Realizaron al menos 1 pago',          color: 'bg-green-500',  dot: 'bg-green-500'   },
+  { key: 'con_primer_pago',       pctKey: 'pct_pago',        label: 'Primer Pago',             hint: 'Realizaron al menos 1 pago. Se considera Primer Pago a todo turno asistido con monto mayor a $0. No se contabilizan turnos gratuitos ni cortesías (monto = $0).',          color: 'bg-green-500',  dot: 'bg-green-500'   },
   { key: 'recurrentes',           pctKey: 'pct_recurrente',  label: 'Recurrente (3+ turnos)',  hint: 'Volvieron 3 o más veces',             color: 'bg-purple-500', dot: 'bg-purple-500'  },
 ] as const;
 
