@@ -81,6 +81,42 @@ export default function CsvUpload() {
     currentFile: string;
   } | null>(null);
   const [isRefreshingDashboard, setIsRefreshingDashboard] = useState(false);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<string | null>(null);
+  const [ultimaFechaNegocio, setUltimaFechaNegocio] = useState<string | null>(null);
+
+  const fetchMetaDates = useCallback(async () => {
+    try {
+      const [resActualizacion, resNegocio] = await Promise.all([
+        supabase.rpc('execute_select', {
+          query: "SELECT MAX(_loaded_at) AS ultima_actualizacion FROM raw.agenda_detallada"
+        }),
+        supabase.rpc('execute_select', {
+          query: "SELECT MAX(fecha_turno::date) AS ultima_fecha_negocio FROM dashboard.finanzas_diario WHERE fecha_turno <= NOW()"
+        }),
+      ]);
+
+      if (!resActualizacion.error && resActualizacion.data?.[0]?.ultima_actualizacion) {
+        const d = new Date(resActualizacion.data[0].ultima_actualizacion);
+        setUltimaActualizacion(
+          d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+          ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'
+        );
+      }
+
+      if (!resNegocio.error && resNegocio.data?.[0]?.ultima_fecha_negocio) {
+        const d = new Date(resNegocio.data[0].ultima_fecha_negocio + 'T12:00:00');
+        setUltimaFechaNegocio(
+          d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        );
+      }
+    } catch (e) {
+      console.error('Error fetching meta dates:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMetaDates();
+  }, [fetchMetaDates]);
 
   // Calcular cuáles archivos están cargados exitosamente
   const uploadStatus = useMemo(() => {
