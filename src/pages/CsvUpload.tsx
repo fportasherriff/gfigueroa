@@ -283,27 +283,14 @@ export default function CsvUpload() {
 
     setIsRefreshingDashboard(true);
     try {
-      // Intentar primero refresh-analytics, si falla probar refresh-dashboard
-      let data: any;
-      let usedFunction = "refresh-analytics";
+      const { data, error } = await supabase.functions.invoke("refresh-analytics");
 
-      const analyticsResult = await supabase.functions.invoke("refresh-analytics");
-      if (analyticsResult.error) {
-        // Fallback a refresh-dashboard
-        usedFunction = "refresh-dashboard";
-        const dashboardResult = await supabase.functions.invoke("refresh-dashboard");
-        if (dashboardResult.error) throw dashboardResult.error;
-        data = dashboardResult.data;
-      } else {
-        data = analyticsResult.data;
-      }
+      if (error) throw error;
 
-      // Normalizar respuesta — refresh-analytics anida en result, refresh-dashboard no
       const refreshResult = data?.result || data;
-      const viewsRefreshed = refreshResult?.views_refreshed || refreshResult?.results?.length || 0;
-      const details = refreshResult?.details || refreshResult?.results || [];
-      const failedViews = details.filter((r: any) => !r.success);
+      const details = refreshResult?.details || [];
       const successCount = details.filter((r: any) => r.success).length;
+      const failedViews = details.filter((r: any) => !r.success);
 
       // Resetear el estado de todos los archivos para un nuevo ciclo de carga
       setCsvFiles(initialCsvFiles);
@@ -316,7 +303,7 @@ export default function CsvUpload() {
         status: refreshResult?.success ? "success" : "error",
         timestamp: new Date(),
         message: refreshResult?.success
-          ? `${successCount}/${viewsRefreshed} vistas actualizadas (Analytics: ${details.filter((r: any) => r.success && r.schema === 'analytics').length}, Dashboard: ${details.filter((r: any) => r.success && r.schema === 'dashboard').length})`
+          ? `${successCount}/${refreshResult.views_refreshed} vistas actualizadas (Analytics: ${details.filter((r: any) => r.success && r.schema === 'analytics').length}, Dashboard: ${details.filter((r: any) => r.success && r.schema === 'dashboard').length})`
           : "Error al actualizar el dashboard",
         recordsProcessed: successCount,
       };
@@ -324,15 +311,13 @@ export default function CsvUpload() {
 
       if (refreshResult?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
-          description: `${successCount} vistas actualizadas correctamente. Podés comenzar un nuevo ciclo de carga.`,
+          description: `${successCount} vistas actualizadas correctamente.`,
         });
       } else {
-        if (failedViews.length > 0) {
-          toast.warning(`Dashboard actualizado con advertencias`, {
-            description: `Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(", ")}`,
-          });
-        } else {
-          toast.success("Dashboard actualizado - Nuevo ciclo iniciado");
+        toast.warning("Dashboard actualizado con advertencias", {
+          description: failedViews.length > 0
+            ? `Vistas con error: ${failedViews.map((v: any) => v.view).join(", ")}`
+            : "Error desconocido",
         }
       }
     } catch (error) {
