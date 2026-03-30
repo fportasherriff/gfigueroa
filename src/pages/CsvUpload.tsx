@@ -283,14 +283,25 @@ export default function CsvUpload() {
 
     setIsRefreshingDashboard(true);
     try {
-      const { data, error } = await supabase.functions.invoke("refresh-analytics");
+      // Intentar primero refresh-analytics, si falla probar refresh-dashboard
+      let data: any;
+      let usedFunction = "refresh-analytics";
 
-      if (error) throw error;
+      const analyticsResult = await supabase.functions.invoke("refresh-analytics");
+      if (analyticsResult.error) {
+        // Fallback a refresh-dashboard
+        usedFunction = "refresh-dashboard";
+        const dashboardResult = await supabase.functions.invoke("refresh-dashboard");
+        if (dashboardResult.error) throw dashboardResult.error;
+        data = dashboardResult.data;
+      } else {
+        data = analyticsResult.data;
+      }
 
-      // El response de refresh-analytics tiene formato: { success, result: { success, views_refreshed, details } }
+      // Normalizar respuesta — refresh-analytics anida en result, refresh-dashboard no
       const refreshResult = data?.result || data;
-      const viewsRefreshed = refreshResult?.views_refreshed || 0;
-      const details = refreshResult?.details || [];
+      const viewsRefreshed = refreshResult?.views_refreshed || refreshResult?.results?.length || 0;
+      const details = refreshResult?.details || refreshResult?.results || [];
       const failedViews = details.filter((r: any) => !r.success);
       const successCount = details.filter((r: any) => r.success).length;
 
