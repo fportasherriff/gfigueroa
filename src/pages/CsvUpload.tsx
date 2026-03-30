@@ -318,7 +318,7 @@ export default function CsvUpload() {
           description: failedViews.length > 0
             ? `Vistas con error: ${failedViews.map((v: any) => v.view).join(", ")}`
             : "Error desconocido",
-        }
+        });
       }
     } catch (error) {
       console.error("Error refreshing dashboard:", error);
