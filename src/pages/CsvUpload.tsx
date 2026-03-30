@@ -283,14 +283,13 @@ export default function CsvUpload() {
 
     setIsRefreshingDashboard(true);
     try {
-      const { data, error } = await supabase.functions.invoke("refresh-analytics");
+      const { data, error } = await supabase.functions.invoke("refresh-dashboard");
 
       if (error) throw error;
 
-      const refreshResult = data?.result || data;
-      const details = refreshResult?.details || [];
-      const successCount = details.filter((r: any) => r.success).length;
-      const failedViews = details.filter((r: any) => !r.success);
+      const results = data?.results || [];
+      const successCount = results.filter((r: any) => r.success).length;
+      const failedViews = results.filter((r: any) => !r.success);
 
       // Resetear el estado de todos los archivos para un nuevo ciclo de carga
       setCsvFiles(initialCsvFiles);
@@ -300,16 +299,16 @@ export default function CsvUpload() {
         id: Date.now().toString(),
         fileName: "Actualización Dashboard",
         fileType: "dashboard_refresh",
-        status: refreshResult?.success ? "success" : "error",
+        status: data?.success ? "success" : "error",
         timestamp: new Date(),
-        message: refreshResult?.success
-          ? `${successCount}/${refreshResult.views_refreshed} vistas actualizadas (Analytics: ${details.filter((r: any) => r.success && r.schema === 'analytics').length}, Dashboard: ${details.filter((r: any) => r.success && r.schema === 'dashboard').length})`
+        message: data?.success
+          ? `${successCount}/${results.length} vistas actualizadas (Analytics: ${results.filter((r: any) => r.success && r.schema === 'analytics').length}, Dashboard: ${results.filter((r: any) => r.success && r.schema === 'dashboard').length})`
           : "Error al actualizar el dashboard",
         recordsProcessed: successCount,
       };
       setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
 
-      if (refreshResult?.success) {
+      if (data?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
           description: `${successCount} vistas actualizadas correctamente.`,
         });
