@@ -372,6 +372,14 @@ export default function CsvUpload() {
           Carga de CSV
         </h1>
         <p className="text-muted-foreground mt-1">Sube los archivos CSV para actualizar los datos del tablero</p>
+        <div className="flex flex-col sm:flex-row sm:gap-6 gap-1 mt-2">
+          {ultimaActualizacion && (
+            <p className="text-xs text-muted-foreground">🔄 Última actualización del sistema: {ultimaActualizacion}</p>
+          )}
+          {ultimaFechaNegocio && (
+            <p className="text-xs text-muted-foreground">📅 Datos de negocio disponibles hasta: {ultimaFechaNegocio}</p>
+          )}
+        </div>
       </div>
 
       {/* Info Banner - Cómo funciona (PRIMERO) */}
