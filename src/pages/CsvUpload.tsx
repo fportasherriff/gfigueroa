@@ -283,7 +283,7 @@ export default function CsvUpload() {
 
     setIsRefreshingDashboard(true);
     try {
-      const { data, error } = await supabase.functions.invoke("refresh-dashboard");
+      const { data, error } = await supabase.functions.invoke("refresh-analytics");
 
       if (error) throw error;
 
