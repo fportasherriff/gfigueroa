@@ -87,6 +87,9 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
                 Todos los porcentajes son sobre el total de clientes dados de alta. Un cliente puede estar en varias etapas a la vez.
               </p>
               <p className="text-xs text-muted-foreground mt-2">
+                Primer Pago = turno asistido con monto mayor a $0. No se contabilizan turnos gratuitos ni cortesías (monto = $0).
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
                 Recurrente = 3 o más turnos asistidos.
               </p>
               <p className="text-xs text-blue-600 mt-2 font-mono">
