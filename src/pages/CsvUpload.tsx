@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Upload, Info, RefreshCw, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,42 @@ export default function CsvUpload() {
     currentFile: string;
   } | null>(null);
   const [isRefreshingDashboard, setIsRefreshingDashboard] = useState(false);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<string | null>(null);
+  const [ultimaFechaNegocio, setUltimaFechaNegocio] = useState<string | null>(null);
+
+  const fetchMetaDates = useCallback(async () => {
+    try {
+      const [resActualizacion, resNegocio] = await Promise.all([
+        supabase.rpc('execute_select', {
+          query: "SELECT MAX(_loaded_at) AS ultima_actualizacion FROM raw.agenda_detallada"
+        }),
+        supabase.rpc('execute_select', {
+          query: "SELECT MAX(fecha_turno::date) AS ultima_fecha_negocio FROM dashboard.finanzas_diario WHERE fecha_turno <= NOW()"
+        }),
+      ]);
+
+      if (!resActualizacion.error && resActualizacion.data?.[0]?.ultima_actualizacion) {
+        const d = new Date(resActualizacion.data[0].ultima_actualizacion);
+        setUltimaActualizacion(
+          d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+          ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'
+        );
+      }
+
+      if (!resNegocio.error && resNegocio.data?.[0]?.ultima_fecha_negocio) {
+        const d = new Date(resNegocio.data[0].ultima_fecha_negocio + 'T12:00:00');
+        setUltimaFechaNegocio(
+          d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        );
+      }
+    } catch (e) {
+      console.error('Error fetching meta dates:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMetaDates();
+  }, [fetchMetaDates]);
 
   // Calcular cuáles archivos están cargados exitosamente
   const uploadStatus = useMemo(() => {
@@ -308,6 +344,17 @@ export default function CsvUpload() {
       };
       setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
 
+      // Refrescar fechas meta después del refresh exitoso
+      await fetchMetaDates();
+
+      // Agregar fechas meta al mensaje del historial
+      const metaParts: string[] = [];
+      if (ultimaActualizacion) metaParts.push(`Últ. actualización: ${ultimaActualizacion}`);
+      if (ultimaFechaNegocio) metaParts.push(`Datos hasta: ${ultimaFechaNegocio}`);
+      if (metaParts.length > 0) {
+        dashboardHistoryEntry.message += ` | ${metaParts.join(' | ')}`;
+      }
+
       if (data?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
           description: `${successCount} vistas actualizadas correctamente.`,
@@ -336,6 +383,14 @@ export default function CsvUpload() {
           Carga de CSV
         </h1>
         <p className="text-muted-foreground mt-1">Sube los archivos CSV para actualizar los datos del tablero</p>
+        <div className="flex flex-col sm:flex-row sm:gap-6 gap-1 mt-2">
+          {ultimaActualizacion && (
+            <p className="text-xs text-muted-foreground">🔄 Última actualización del sistema: {ultimaActualizacion}</p>
+          )}
+          {ultimaFechaNegocio && (
+            <p className="text-xs text-muted-foreground">📅 Datos de negocio disponibles hasta: {ultimaFechaNegocio}</p>
+          )}
+        </div>
       </div>
 
       {/* Info Banner - Cómo funciona (PRIMERO) */}
