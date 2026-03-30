@@ -26,7 +26,7 @@ export const KPICard = ({
   title,
   value,
   trend,
-  trendLabel = 'vs mes anterior',
+  trendLabel = 'vs período anterior',
   trendSuffix = '%',
   trendInverse = false,
   tooltip,

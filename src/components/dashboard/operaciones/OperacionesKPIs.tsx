@@ -40,7 +40,7 @@ const DeltaBadge = ({ actual, anterior, invertido = false }: {
 
   return (
     <span className={`text-xs font-medium ${esMejora ? 'text-green-600' : 'text-red-500'}`}>
-      {delta > 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}% vs mes ant.
+      {delta > 0 ? '▲' : '▼'} {Math.abs(delta).toFixed(1)}% vs período ant.
     </span>
   );
 };
