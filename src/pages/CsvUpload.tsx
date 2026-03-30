@@ -283,9 +283,16 @@ export default function CsvUpload() {
 
     setIsRefreshingDashboard(true);
     try {
-      const { data, error } = await supabase.functions.invoke("refresh-dashboard");
+      const { data, error } = await supabase.functions.invoke("refresh-analytics");
 
       if (error) throw error;
+
+      // El response de refresh-analytics tiene formato: { success, result: { success, views_refreshed, details } }
+      const refreshResult = data?.result || data;
+      const viewsRefreshed = refreshResult?.views_refreshed || 0;
+      const details = refreshResult?.details || [];
+      const failedViews = details.filter((r: any) => !r.success);
+      const successCount = details.filter((r: any) => r.success).length;
 
       // Resetear el estado de todos los archivos para un nuevo ciclo de carga
       setCsvFiles(initialCsvFiles);
@@ -295,19 +302,20 @@ export default function CsvUpload() {
         id: Date.now().toString(),
         fileName: "Actualización Dashboard",
         fileType: "dashboard_refresh",
-        status: data?.success ? "success" : "error",
+        status: refreshResult?.success ? "success" : "error",
         timestamp: new Date(),
-        message: data?.message || "Dashboard actualizado",
-        recordsProcessed: data?.results?.filter((r: any) => r.success).length || 0,
+        message: refreshResult?.success
+          ? `${successCount}/${viewsRefreshed} vistas actualizadas (Analytics: ${details.filter((r: any) => r.success && r.schema === 'analytics').length}, Dashboard: ${details.filter((r: any) => r.success && r.schema === 'dashboard').length})`
+          : "Error al actualizar el dashboard",
+        recordsProcessed: successCount,
       };
       setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
 
-      if (data?.success) {
+      if (refreshResult?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
-          description: "Los archivos fueron procesados. Podés comenzar un nuevo ciclo de carga.",
+          description: `${successCount} vistas actualizadas correctamente. Podés comenzar un nuevo ciclo de carga.`,
         });
       } else {
-        const failedViews = data?.results?.filter((r: any) => !r.success) || [];
         if (failedViews.length > 0) {
           toast.warning(`Dashboard actualizado con advertencias`, {
             description: `Algunas vistas no se actualizaron: ${failedViews.map((v: any) => v.view).join(", ")}`,
