@@ -344,6 +344,17 @@ export default function CsvUpload() {
       };
       setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
 
+      // Refrescar fechas meta después del refresh exitoso
+      await fetchMetaDates();
+
+      // Agregar fechas meta al mensaje del historial
+      const metaParts: string[] = [];
+      if (ultimaActualizacion) metaParts.push(`Últ. actualización: ${ultimaActualizacion}`);
+      if (ultimaFechaNegocio) metaParts.push(`Datos hasta: ${ultimaFechaNegocio}`);
+      if (metaParts.length > 0) {
+        dashboardHistoryEntry.message += ` | ${metaParts.join(' | ')}`;
+      }
+
       if (data?.success) {
         toast.success("Dashboard actualizado - Nuevo ciclo iniciado", {
           description: `${successCount} vistas actualizadas correctamente.`,
