@@ -25,7 +25,7 @@ const DATE_PRESETS = [
 export const ComercialModule = () => {
   const [origenFilter, setOrigenFilter] = useState<string>('all');
 
-  const defaultFrom = new Date(2025, 0, 1);
+  const defaultFrom = new Date(new Date().getFullYear(), 0, 1);
   const defaultTo = endOfMonth(new Date());
   const [dateFrom, setDateFrom] = useState<Date>(defaultFrom);
   const [dateTo, setDateTo] = useState<Date>(defaultTo);
@@ -41,6 +41,8 @@ export const ComercialModule = () => {
   const fechaDesde = format(dateFrom, 'yyyy-MM-dd');
   const fechaHasta = format(dateTo, 'yyyy-MM-dd');
 
+  const periodLabel = `${format(dateFrom, 'dd MMM yyyy', { locale: es })} - ${format(dateTo, 'dd MMM yyyy', { locale: es })}`;
+
   const { data: embudoData, isLoading: embudoLoading, error: embudoError, refetch: refetchEmbudo } = useComercialEmbudo({
     origen: origenFilter === 'all' ? undefined : origenFilter,
     fechaDesde,
@@ -48,8 +50,6 @@ export const ComercialModule = () => {
   });
   const { data: canalesData, isLoading: canalesLoading, error: canalesError, refetch: refetchCanales } = useComercialCanales();
   const { data: origenes } = useOrigenes();
-
-  const periodLabel = `${format(dateFrom, 'dd MMM yyyy', { locale: es })} - ${format(dateTo, 'dd MMM yyyy', { locale: es })}`;
 
   if (embudoError) {
     return <ErrorState error={embudoError as Error} retry={refetchEmbudo} />;
@@ -61,16 +61,13 @@ export const ComercialModule = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Filtros */}
       <div className="flex items-center gap-4 flex-wrap">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn(
-                "w-72 justify-start text-left font-normal",
-                !dateFrom && "text-muted-foreground"
-              )}
+              className={cn("w-72 justify-start text-left font-normal")}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {periodLabel}
@@ -99,6 +96,7 @@ export const ComercialModule = () => {
                   selected={dateFrom}
                   onSelect={(date) => date && setDateFrom(date)}
                   locale={es}
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </div>
               <div className="p-3 border-l">
@@ -108,6 +106,7 @@ export const ComercialModule = () => {
                   selected={dateTo}
                   onSelect={(date) => date && setDateTo(date)}
                   locale={es}
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </div>
             </div>
@@ -127,16 +126,18 @@ export const ComercialModule = () => {
         </Select>
       </div>
 
-      {/* SECCIÓN 1 — KPIs */}
-      <ComercialKPIs
-        embudoData={embudoData || []}
-        isLoading={embudoLoading}
-      />
+      {/* Indicador de período */}
+      <div className="text-sm text-muted-foreground">
+        Período seleccionado: <span className="font-medium text-foreground">{periodLabel}</span>
+      </div>
 
-      {/* SECCIÓN 2 — Funnel */}
+      {/* SECCIÓN 1 — KPIs */}
+      <ComercialKPIs embudoData={embudoData || []} isLoading={embudoLoading} />
+
+      {/* SECCIÓN 2 — Dual Funnels SVG */}
       <EmbudoChart data={embudoData || []} isLoading={embudoLoading} />
 
-      {/* SECCIÓN 3 — Evolución temporal */}
+      {/* SECCIÓN 3 — Evolución temporal con tabs */}
       <EvolucionComercialChart data={embudoData || []} isLoading={embudoLoading} />
 
       {/* SECCIÓN 4 — Canales */}

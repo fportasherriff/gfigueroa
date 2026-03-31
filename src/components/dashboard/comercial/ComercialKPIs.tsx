@@ -18,7 +18,11 @@ interface KPICardProps {
   icon: React.ReactNode;
   gradientFrom: string;
   gradientTo: string;
-  tooltip: string;
+  tooltip: {
+    description: string;
+    calculation: string;
+    source: string;
+  };
 }
 
 const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, tooltip }: KPICardProps) => (
@@ -37,15 +41,20 @@ const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, toolt
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
-              <p className="text-xs text-muted-foreground whitespace-pre-line">{tooltip}</p>
-              <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
-                📊 Vista: dashboard.comercial_embudo
+              <p className="font-semibold mb-1">¿Para qué sirve?</p>
+              <p className="text-xs text-muted-foreground mb-2">{tooltip.description}</p>
+              <p className="font-semibold mb-1">¿Cómo se calcula?</p>
+              <p className="text-xs text-muted-foreground mb-2">{tooltip.calculation}</p>
+              <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border font-mono">
+                📊 Vista: {tooltip.source}
               </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
-      <p className="text-3xl font-bold text-foreground">{value}</p>
+      <div data-validation={`dashboard.comercial_embudo.nuevos.SUM`}>
+        <p className="text-3xl font-bold text-foreground">{value}</p>
+      </div>
       <div className="flex-1">
         <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
       </div>
@@ -60,9 +69,12 @@ export const ComercialKPIs = ({ embudoData, isLoading }: ComercialKPIsProps) => 
 
     const byEtapa: Record<string, number> = { alta: 0, primera_consulta: 0, primer_pago: 0, recurrente: 0 };
     for (const row of embudoData) {
-      const total = Number(row.nuevos || 0) + Number(row.reactivados_dormidos || 0) + Number(row.resucitados || 0);
-      if (byEtapa[row.etapa] !== undefined) {
-        byEtapa[row.etapa] += total;
+      const etapa = row.etapa;
+      if (byEtapa[etapa] === undefined) continue;
+      if (etapa === 'alta') {
+        byEtapa[etapa] += Number(row.nuevos || 0);
+      } else {
+        byEtapa[etapa] += Number(row.nuevos || 0) + Number(row.reactivados_dormidos || 0) + Number(row.resucitados || 0);
       }
     }
 
@@ -85,7 +97,11 @@ export const ComercialKPIs = ({ embudoData, isLoading }: ComercialKPIsProps) => 
         subtitle="Clientes dados de alta"
         icon={<Users className="w-4 h-4 text-slate-500" />}
         gradientFrom="from-slate-400" gradientTo="to-slate-600"
-        tooltip="Total de clientes dados de alta (etapa 'alta') en el período seleccionado. Se cuentan solo los nuevos."
+        tooltip={{
+          description: "Total de clientes dados de alta en el período seleccionado.",
+          calculation: "SUM(nuevos) WHERE etapa = 'alta'",
+          source: "dashboard.comercial_embudo",
+        }}
       />
       <KPICard
         title="Primeras Consultas"
@@ -93,7 +109,11 @@ export const ComercialKPIs = ({ embudoData, isLoading }: ComercialKPIsProps) => 
         subtitle="Asistieron por primera vez"
         icon={<Target className="w-4 h-4 text-blue-500" />}
         gradientFrom="from-blue-400" gradientTo="to-blue-600"
-        tooltip="Clientes cuya primera visita histórica ocurrió en el período. Incluye nuevos, reactivados dormidos y resucitados."
+        tooltip={{
+          description: "Clientes cuya primera visita histórica ocurrió en el período.",
+          calculation: "SUM(nuevos + reactivados_dormidos + resucitados) WHERE etapa = 'primera_consulta'",
+          source: "dashboard.comercial_embudo",
+        }}
       />
       <KPICard
         title="Primeros Pagos"
@@ -101,7 +121,11 @@ export const ComercialKPIs = ({ embudoData, isLoading }: ComercialKPIsProps) => 
         subtitle="Pagaron por primera vez"
         icon={<UserCheck className="w-4 h-4 text-green-500" />}
         gradientFrom="from-green-400" gradientTo="to-green-600"
-        tooltip="Primer turno asistido con monto > $0 en toda la historia del cliente. No se cuentan cortesías ni turnos gratuitos (monto = $0)."
+        tooltip={{
+          description: "Primer turno asistido con monto > $0 en toda la historia del cliente.",
+          calculation: "SUM(nuevos + reactivados_dormidos + resucitados) WHERE etapa = 'primer_pago'. No se cuentan cortesías ni turnos gratuitos (monto = $0).",
+          source: "dashboard.comercial_embudo",
+        }}
       />
       <KPICard
         title="Recurrentes (3+ turnos)"
@@ -109,7 +133,11 @@ export const ComercialKPIs = ({ embudoData, isLoading }: ComercialKPIsProps) => 
         subtitle="Alcanzaron 3+ asistencias"
         icon={<RefreshCw className="w-4 h-4 text-purple-500" />}
         gradientFrom="from-purple-400" gradientTo="to-purple-600"
-        tooltip="Clientes que alcanzaron 3 o más asistencias históricas acumuladas durante el período. Indicador clave de fidelización."
+        tooltip={{
+          description: "Clientes que alcanzaron 3 o más asistencias históricas acumuladas durante el período.",
+          calculation: "SUM(nuevos + reactivados_dormidos + resucitados) WHERE etapa = 'recurrente'",
+          source: "dashboard.comercial_embudo",
+        }}
       />
     </div>
   );
