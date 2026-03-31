@@ -38,9 +38,12 @@ export const EmbudoChart = ({ data, isLoading, fechaDesde }: EmbudoChartProps) =
       const { data: result } = await supabase.rpc('execute_select', {
         query: `SELECT MIN(fecha_turno)::date AS primer_dato FROM analytics.fact_turnos WHERE es_asistido = true`,
       });
-      if (Array.isArray(result) && result.length > 0 && result[0].primer_dato) {
-        const [y, m, d] = result[0].primer_dato.split('-').map(Number);
-        setPrimerDato(new Date(y, m - 1, d));
+      if (Array.isArray(result) && result.length > 0) {
+        const row = result[0] as Record<string, unknown>;
+        if (row.primer_dato) {
+          const [y, m, d] = String(row.primer_dato).split('-').map(Number);
+          setPrimerDato(new Date(y, m - 1, d));
+        }
       }
     };
     fetchPrimerDato();
