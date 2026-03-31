@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, X, Filter } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,6 +11,7 @@ import { useComercialEmbudo, useComercialCanales, useOrigenes } from '@/hooks/us
 import { ErrorState } from '../DashboardStates';
 import { ComercialKPIs } from './ComercialKPIs';
 import { EmbudoChart } from './EmbudoChart';
+import { EvolucionComercialChart } from './EvolucionComercialChart';
 import { CanalesTable } from './CanalesTable';
 
 const DATE_PRESETS = [
@@ -62,9 +61,8 @@ export const ComercialModule = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters — identical to Finanzas */}
+      {/* Filters */}
       <div className="flex items-center gap-4 flex-wrap">
-        {/* Date Range Filter */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -129,46 +127,20 @@ export const ComercialModule = () => {
         </Select>
       </div>
 
-      {/* Context block */}
-      <div className="bg-muted/40 rounded-lg px-4 py-4 border border-border/50 space-y-2">
-        <p className="text-sm font-semibold text-foreground">
-          📊 Panel Comercial — ¿Cuántos clientes realmente se activan?
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Este panel muestra el recorrido real de cada cliente: cuántos se registraron, cuántos vinieron a atenderse, cuántos pagaron y cuántos volvieron más de dos veces.
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Los <span className="font-medium text-green-600">números en verde</span> están dentro de lo esperado.{" "}
-          Los <span className="font-medium text-yellow-600">amarillos</span> requieren atención.{" "}
-          Los <span className="font-medium text-red-600">rojos</span> indican una oportunidad concreta de mejora.
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Usá el filtro de canal para ver cómo rinde cada fuente de captación — Instagram, Facebook, referidos — y decidir dónde enfocar el esfuerzo comercial.
-        </p>
-      </div>
-
-      {/* KPIs Grid */}
-      <ComercialKPIs 
+      {/* SECCIÓN 1 — KPIs */}
+      <ComercialKPIs
         embudoData={embudoData || []}
-        canalesData={canalesData || []}
-        isLoading={embudoLoading || canalesLoading}
+        isLoading={embudoLoading}
       />
 
-      {/* Tabs Section */}
-      <Tabs defaultValue="embudo" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="embudo">Embudo</TabsTrigger>
-          <TabsTrigger value="canales">x Canal</TabsTrigger>
-        </TabsList>
+      {/* SECCIÓN 2 — Funnel */}
+      <EmbudoChart data={embudoData || []} isLoading={embudoLoading} />
 
-        <TabsContent value="embudo">
-          <EmbudoChart data={embudoData || []} isLoading={embudoLoading} />
-        </TabsContent>
+      {/* SECCIÓN 3 — Evolución temporal */}
+      <EvolucionComercialChart data={embudoData || []} isLoading={embudoLoading} />
 
-        <TabsContent value="canales">
-          <CanalesTable data={canalesData || []} isLoading={canalesLoading} />
-        </TabsContent>
-      </Tabs>
+      {/* SECCIÓN 4 — Canales */}
+      <CanalesTable data={canalesData || []} isLoading={canalesLoading} />
     </div>
   );
 };
