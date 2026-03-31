@@ -73,7 +73,14 @@ const initialCsvFiles: CsvFile[] = [
 export default function CsvUpload() {
   const [csvFiles, setCsvFiles] = useState<CsvFile[]>(initialCsvFiles);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>([]);
+  const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('ghigi_upload_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{
     current: number;
