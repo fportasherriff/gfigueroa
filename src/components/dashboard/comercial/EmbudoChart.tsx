@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChartSkeleton } from '../DashboardStates';
 import { FunnelSVG } from './FunnelSVG';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { format, addMonths, parse } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { ComercialEmbudo } from '@/types/dashboard';
 
 interface EmbudoChartProps {
   data: ComercialEmbudo[];
   isLoading: boolean;
+  fechaDesde: string; // YYYY-MM-DD
 }
 
 const ETAPA_ORDER = ['alta', 'primera_consulta', 'primer_pago', 'recurrente'] as const;
