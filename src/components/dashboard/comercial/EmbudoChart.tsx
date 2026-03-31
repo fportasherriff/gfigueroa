@@ -126,11 +126,11 @@ export const EmbudoChart = ({ data, isLoading, fechaDesde }: EmbudoChartProps) =
                 source: 'dashboard.comercial_embudo',
               }}
             />
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                💡 Los Resucitados (clientes que vuelven tras +12 meses sin visita) aparecen en este funnel pero actualmente son muy pocos porque el historial de agenda disponible arranca en enero 2025. Este número irá creciendo naturalmente a medida que pasen los meses.
-              </p>
-            </div>
+            {resucitadosNote && (
+              <div className="bg-[#F5F6FB] border-l-4 border-[#0075FF] p-3 rounded-r-lg text-sm text-[#384550]">
+                {resucitadosNote}
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>

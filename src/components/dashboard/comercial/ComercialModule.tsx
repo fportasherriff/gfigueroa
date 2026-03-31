@@ -135,7 +135,7 @@ export const ComercialModule = () => {
       <ComercialKPIs embudoData={embudoData || []} isLoading={embudoLoading} />
 
       {/* SECCIÓN 2 — Dual Funnels SVG */}
-      <EmbudoChart data={embudoData || []} isLoading={embudoLoading} />
+      <EmbudoChart data={embudoData || []} isLoading={embudoLoading} fechaDesde={fechaDesde} />
 
       {/* SECCIÓN 3 — Evolución temporal con tabs */}
       <EvolucionComercialChart data={embudoData || []} isLoading={embudoLoading} />
