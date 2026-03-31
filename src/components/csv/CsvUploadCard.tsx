@@ -58,26 +58,26 @@ export function CsvUploadCard({
             <FileSpreadsheet className="w-5 h-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <CardTitle className="text-base leading-tight truncate">{csvFile.name}</CardTitle>
-              {downloadInstruction && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        type="button"
-                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground text-xs font-medium transition-colors cursor-help flex-shrink-0"
-                      >
-                        <Info className="w-3 h-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-sm">
-                      <p>{downloadInstruction}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              <div className="flex-shrink-0 ml-auto">
+            <div className="flex items-center justify-between gap-1">
+              <CardTitle className="text-sm leading-tight line-clamp-2">{csvFile.name}</CardTitle>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {downloadInstruction && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          type="button"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted-foreground/20 text-muted-foreground text-xs font-medium transition-colors cursor-help"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-sm">
+                        <p>{downloadInstruction}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
                 {getStatusIcon(csvFile.status)}
               </div>
             </div>
