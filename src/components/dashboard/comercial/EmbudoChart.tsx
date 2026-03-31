@@ -30,7 +30,35 @@ const ETAPA_TOOLTIPS_NUEVOS: Record<string, string> = {
   recurrente: 'Clientes con 3+ asistencias desde su primera consulta, que ya realizaron al menos un pago. Es subconjunto de Primer Pago.',
 };
 
-export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
+export const EmbudoChart = ({ data, isLoading, fechaDesde }: EmbudoChartProps) => {
+  const [primerDato, setPrimerDato] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const fetchPrimerDato = async () => {
+      const { data: result } = await supabase.rpc('execute_select', {
+        query: `SELECT MIN(fecha_turno)::date AS primer_dato FROM analytics.fact_turnos WHERE es_asistido = true`,
+      });
+      if (Array.isArray(result) && result.length > 0 && result[0].primer_dato) {
+        const [y, m, d] = result[0].primer_dato.split('-').map(Number);
+        setPrimerDato(new Date(y, m - 1, d));
+      }
+    };
+    fetchPrimerDato();
+  }, []);
+
+  const resucitadosNote = useMemo(() => {
+    if (!primerDato) return null;
+    const fechaMinima = addMonths(primerDato, 12);
+    const [y, m, d] = fechaDesde.split('-').map(Number);
+    const filterFrom = new Date(y, m - 1, d);
+
+    const fmt = (date: Date) => format(date, "dd MMM yyyy", { locale: es });
+
+    if (filterFrom > fechaMinima) {
+      return `💡 No hay resucitados visibles en este período porque el filtro arranca en ${fmt(filterFrom)}. Para que aparezcan resucitados, el período debe incluir fechas desde ${fmt(fechaMinima)}, que es cuando hay suficiente historial para detectar clientes que vuelven tras +12 meses.`;
+    }
+    return `💡 Los Resucitados (clientes que vuelven tras +12 meses sin visita) irán apareciendo con el tiempo. El historial disponible arranca el ${fmt(primerDato)} — recién a partir del ${fmt(fechaMinima)} hay suficiente distancia temporal para detectarlos.`;
+  }, [primerDato, fechaDesde]);
   const { nuevosStages, reactivacionStages } = useMemo(() => {
     if (!data.length) return { nuevosStages: [], reactivacionStages: [] };
 
