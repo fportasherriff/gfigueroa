@@ -188,15 +188,25 @@ export const useOperacionesCapacidad = (filters?: {
 };
 
 // Comercial Embudo Hook - Updated for new view structure
-export const useComercialEmbudo = (filters?: { origen?: string }) => {
+export const useComercialEmbudo = (filters?: { 
+  origen?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+}) => {
   return useQuery({
     queryKey: ['comercial-embudo', filters],
     queryFn: async () => {
       let sql = `SELECT * FROM dashboard.comercial_embudo WHERE 1=1`;
+      if (filters?.fechaDesde) {
+        sql += ` AND mes_evento >= '${filters.fechaDesde}'`;
+      }
+      if (filters?.fechaHasta) {
+        sql += ` AND mes_evento <= '${filters.fechaHasta}'`;
+      }
       if (filters?.origen) {
         sql += ` AND origen = '${filters.origen}'`;
       }
-      sql += ` ORDER BY mes_alta ASC, origen ASC`;
+      sql += ` ORDER BY mes_evento ASC, origen ASC`;
       return queryDashboardView<ComercialEmbudo>(sql);
     },
     staleTime: 10 * 60 * 1000,

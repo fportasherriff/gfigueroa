@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 import { ChartSkeleton, EmptyState } from '../DashboardStates';
-import { formatNumber, formatPercent } from '@/lib/formatters';
+import { formatNumber } from '@/lib/formatters';
 import type { ComercialEmbudo } from '@/types/dashboard';
 
 interface EmbudoChartProps {
@@ -11,29 +11,66 @@ interface EmbudoChartProps {
   isLoading: boolean;
 }
 
-const STAGES = [
-  { key: 'clientes_nuevos',       pctKey: null,              label: 'Alta como cliente',       hint: 'Se registraron en el sistema',       color: 'bg-slate-500',  dot: 'bg-slate-500'   },
-  { key: 'con_primera_consulta',  pctKey: 'pct_consulta',    label: 'Primera Consulta',        hint: 'Vinieron al menos una vez',           color: 'bg-blue-500',   dot: 'bg-blue-500'    },
-  { key: 'con_primer_pago',       pctKey: 'pct_pago',        label: 'Primer Pago',             hint: 'Realizaron al menos 1 pago. Se considera Primer Pago a todo turno asistido con monto mayor a $0. No se contabilizan turnos gratuitos ni cortesías (monto = $0).',          color: 'bg-green-500',  dot: 'bg-green-500'   },
-  { key: 'recurrentes',           pctKey: 'pct_recurrente',  label: 'Recurrente (3+ turnos)',  hint: 'Volvieron 3 o más veces',             color: 'bg-purple-500', dot: 'bg-purple-500'  },
-] as const;
+const ETAPA_ORDER = ['alta', 'primera_consulta', 'primer_pago', 'recurrente'] as const;
+
+const ETAPA_CONFIG: Record<string, { label: string; tooltip: string }> = {
+  alta: {
+    label: 'Alta',
+    tooltip: 'Clientes dados de alta en el período seleccionado.',
+  },
+  primera_consulta: {
+    label: 'Primera Consulta',
+    tooltip: 'Primera vez que el cliente asistió en toda su historia. Incluye: Nuevos (alta en el período), Reactivados dormidos (alta previa, primera visita ahora), Resucitados (ya habían venido pero hace más de 12 meses).',
+  },
+  primer_pago: {
+    label: 'Primer Pago',
+    tooltip: 'Primer turno asistido con monto > $0 en toda la historia del cliente. No se cuentan cortesías ni turnos gratuitos (monto = $0).',
+  },
+  recurrente: {
+    label: 'Recurrente (3+ turnos)',
+    tooltip: 'Clientes que alcanzaron 3 o más asistencias históricas acumuladas durante el período.',
+  },
+};
+
+const SEGMENT_COLORS = {
+  nuevos: { bg: 'bg-blue-500', text: 'text-blue-600', label: 'Nuevos' },
+  reactivados_dormidos: { bg: 'bg-orange-500', text: 'text-orange-600', label: 'Reactivados dormidos' },
+  resucitados: { bg: 'bg-green-500', text: 'text-green-600', label: 'Resucitados' },
+};
 
 export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
-  const totals = useMemo(() => {
+  const stages = useMemo(() => {
     if (!data.length) return null;
-    return data.reduce(
-      (acc, row) => ({
-        clientes_nuevos:      acc.clientes_nuevos      + Number(row.clientes_nuevos      || 0),
-        con_primera_consulta: acc.con_primera_consulta + Number(row.con_primera_consulta || 0),
-        con_primer_pago:      acc.con_primer_pago      + Number(row.con_primer_pago      || 0),
-        recurrentes:          acc.recurrentes          + Number(row.recurrentes          || 0),
-      }),
-      { clientes_nuevos: 0, con_primera_consulta: 0, con_primer_pago: 0, recurrentes: 0 }
-    );
+
+    // Aggregate by etapa across all rows
+    const agg: Record<string, { nuevos: number; reactivados_dormidos: number; resucitados: number }> = {};
+    for (const etapa of ETAPA_ORDER) {
+      agg[etapa] = { nuevos: 0, reactivados_dormidos: 0, resucitados: 0 };
+    }
+    for (const row of data) {
+      const e = row.etapa;
+      if (!agg[e]) continue;
+      agg[e].nuevos += Number(row.nuevos || 0);
+      agg[e].reactivados_dormidos += Number(row.reactivados_dormidos || 0);
+      agg[e].resucitados += Number(row.resucitados || 0);
+    }
+
+    return ETAPA_ORDER.map(etapa => {
+      const d = agg[etapa];
+      const total = d.nuevos + d.reactivados_dormidos + d.resucitados;
+      return {
+        etapa,
+        ...ETAPA_CONFIG[etapa],
+        nuevos: d.nuevos,
+        reactivados_dormidos: d.reactivados_dormidos,
+        resucitados: d.resucitados,
+        total,
+      };
+    });
   }, [data]);
 
   if (isLoading) return <ChartSkeleton />;
-  if (!totals || totals.clientes_nuevos === 0) {
+  if (!stages || stages.every(s => s.total === 0)) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -46,21 +83,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
     );
   }
 
-  const base = totals.clientes_nuevos;
-
-  const stages = STAGES.map(s => ({
-    label:   s.label,
-    hint:    s.hint,
-    color:   s.color,
-    dot:     s.dot,
-    value:   totals[s.key],
-    pct:     s.pctKey === null ? 100 : Math.round((totals[s.key] / base) * 100 * 10) / 10,
-  }));
-
-  // Dynamic summary line
-  const pctConsulta = base > 0 ? ((totals.con_primera_consulta / base) * 100).toFixed(1) : '0';
-  const pctPago = base > 0 ? ((totals.con_primer_pago / base) * 100).toFixed(1) : '0';
-  const pctRecurrente = base > 0 ? ((totals.recurrentes / base) * 100).toFixed(1) : '0';
+  const maxTotal = Math.max(...stages.map(s => s.total));
 
   return (
     <Card>
@@ -69,67 +92,132 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
           <div>
             <CardTitle className="text-lg">Activación de Clientes</CardTitle>
             <CardDescription>
-              De cada 100 clientes que se dan de alta, ¿cuántos llegan a cada etapa?
+              Recorrido desde el alta hasta la recurrencia — desglosado por tipo de cliente.
             </CardDescription>
-            <p className="text-sm font-medium text-foreground mt-2">
-              {pctConsulta}% llegó a consulta · {pctPago}% pagó · {pctRecurrente}% es recurrente
-            </p>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <Info className="h-4 w-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-xs">
-              <p className="font-semibold mb-2">¿Cómo se calcula?</p>
-              <p className="text-xs text-muted-foreground">
-                Todos los porcentajes son sobre el total de clientes dados de alta. Un cliente puede estar en varias etapas a la vez.
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Primer Pago = turno asistido con monto mayor a $0. No se contabilizan turnos gratuitos ni cortesías (monto = $0).
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Recurrente = 3 o más turnos asistidos.
-              </p>
-              <p className="text-xs text-blue-600 mt-2 font-mono">
-                📊 Vista: dashboard.comercial_embudo
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Info className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-xs">
+                <p className="font-semibold mb-2">¿Cómo se lee este gráfico?</p>
+                <p className="text-xs text-muted-foreground">
+                  Cada barra muestra cuántos clientes alcanzaron esa etapa, desglosados en 3 segmentos:
+                </p>
+                <ul className="text-xs text-muted-foreground mt-1 space-y-1">
+                  <li><span className="font-medium text-blue-600">Nuevos</span>: alta en el período</li>
+                  <li><span className="font-medium text-orange-600">Reactivados</span>: alta previa, primera visita ahora</li>
+                  <li><span className="font-medium text-green-600">Resucitados</span>: volvieron después de 12+ meses</li>
+                </ul>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Los clientes "Activos" (última visita &lt; 12 meses) no aparecen — el funnel mide conversión y reactivación, no retención.
+                </p>
+                <p className="text-xs text-blue-600 mt-2 font-mono">
+                  📊 Vista: dashboard.comercial_embudo
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {stages.map((stage) => (
-          <div key={stage.label} className="space-y-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${stage.dot}`} />
-                <span className="font-medium">{stage.label}</span>
-                <span className="text-lg font-bold">{formatNumber(stage.value)}</span>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {formatPercent(stage.pct)} del total
-              </span>
-            </div>
+      <CardContent className="space-y-5">
+        {stages.map((stage) => {
+          const barWidth = maxTotal > 0 ? Math.max((stage.total / maxTotal) * 100, 8) : 8;
+          const nuevoPct = stage.total > 0 ? (stage.nuevos / stage.total) * 100 : 0;
+          const reactivadoPct = stage.total > 0 ? (stage.reactivados_dormidos / stage.total) * 100 : 0;
+          const resucitadoPct = stage.total > 0 ? (stage.resucitados / stage.total) * 100 : 0;
 
-            <div className="h-10 rounded-lg overflow-hidden bg-muted/30 transition-all duration-500"
-              style={{ width: `${Math.max(stage.pct, 8)}%` }}
-            >
-              <div className={`h-full ${stage.color} flex items-center justify-end pr-3`}>
-                {stage.pct >= 12 && (
-                  <span className="text-xs font-medium text-white">{formatPercent(stage.pct)}</span>
+          return (
+            <div key={stage.etapa} className="space-y-1.5">
+              {/* Label row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{stage.label}</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button className="text-muted-foreground hover:text-foreground transition-colors">
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs">{stage.tooltip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-lg font-bold">{formatNumber(stage.total)}</span>
+              </div>
+
+              {/* Stacked bar */}
+              <div
+                className="h-10 rounded-lg overflow-hidden flex transition-all duration-500"
+                style={{ width: `${barWidth}%` }}
+              >
+                {stage.nuevos > 0 && (
+                  <div
+                    className="bg-blue-500 h-full flex items-center justify-center"
+                    style={{ width: `${nuevoPct}%` }}
+                  >
+                    {nuevoPct >= 15 && (
+                      <span className="text-xs font-medium text-white">{formatNumber(stage.nuevos)}</span>
+                    )}
+                  </div>
+                )}
+                {stage.reactivados_dormidos > 0 && (
+                  <div
+                    className="bg-orange-500 h-full flex items-center justify-center"
+                    style={{ width: `${reactivadoPct}%` }}
+                  >
+                    {reactivadoPct >= 15 && (
+                      <span className="text-xs font-medium text-white">{formatNumber(stage.reactivados_dormidos)}</span>
+                    )}
+                  </div>
+                )}
+                {stage.resucitados > 0 && (
+                  <div
+                    className="bg-green-500 h-full flex items-center justify-center"
+                    style={{ width: `${resucitadoPct}%` }}
+                  >
+                    {resucitadoPct >= 15 && (
+                      <span className="text-xs font-medium text-white">{formatNumber(stage.resucitados)}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Segment detail line */}
+              <div className="flex gap-4 text-xs text-muted-foreground pl-1">
+                {stage.nuevos > 0 && (
+                  <span><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />{formatNumber(stage.nuevos)} nuevos</span>
+                )}
+                {stage.reactivados_dormidos > 0 && (
+                  <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1" />{formatNumber(stage.reactivados_dormidos)} reactivados</span>
+                )}
+                {stage.resucitados > 0 && (
+                  <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{formatNumber(stage.resucitados)} resucitados</span>
                 )}
               </div>
             </div>
+          );
+        })}
 
-            <p className="text-xs text-muted-foreground pl-5">{stage.hint}</p>
-          </div>
-        ))}
+        {/* Legend */}
+        <div className="flex items-center gap-6 pt-2 border-t border-border/50">
+          {Object.entries(SEGMENT_COLORS).map(([key, cfg]) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <div className={`w-3 h-3 rounded-full ${cfg.bg}`} />
+              <span className="text-xs text-muted-foreground">{cfg.label}</span>
+            </div>
+          ))}
+        </div>
 
-        <div className="p-4 bg-muted/50 rounded-lg">
+        <div className="p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
-            💡 Un cliente puede estar en múltiples etapas. El % de Pago bajo indica oportunidad de conversión.
+            💡 Los clientes "Activos" (ya asistieron antes con última visita &lt; 12 meses) no aparecen en el funnel — este gráfico mide conversión y reactivación, no retención.
           </p>
         </div>
       </CardContent>

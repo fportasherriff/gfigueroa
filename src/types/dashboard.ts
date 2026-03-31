@@ -160,15 +160,12 @@ export interface OperacionesCapacidad {
 }
 
 export interface ComercialEmbudo {
-  mes_alta: string;
+  mes_evento: string;
   origen: string;
-  clientes_nuevos: number;
-  con_primera_consulta: number;
-  con_primer_pago: number;
-  recurrentes: number;
-  pct_consulta: number;
-  pct_pago: number;
-  pct_recurrente: number;
+  etapa: 'alta' | 'primera_consulta' | 'primer_pago' | 'recurrente';
+  nuevos: number;
+  reactivados_dormidos: number;
+  resucitados: number;
   anio: number;
   mes_num: number;
 }

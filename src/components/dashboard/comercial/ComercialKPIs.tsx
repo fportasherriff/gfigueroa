@@ -55,7 +55,7 @@ const KPICard = ({ title, value, subtitle, icon, gradientFrom, gradientTo, value
         {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
       </div>
 
-      {/* Bottom gradient bar - always at bottom */}
+      {/* Bottom gradient bar */}
       <div
         className={`h-1 rounded-full mt-4 bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
       />
@@ -67,20 +67,35 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
   const kpis = useMemo(() => {
     if (!embudoData.length && !canalesData.length) return null;
 
-    const totalClientes    = embudoData.reduce((acc, d) => acc + Number(d.clientes_nuevos      || 0), 0);
-    const totalConsulta    = embudoData.reduce((acc, d) => acc + Number(d.con_primera_consulta || 0), 0);
-    const totalPago        = embudoData.reduce((acc, d) => acc + Number(d.con_primer_pago      || 0), 0);
-    const totalRecurrentes = embudoData.reduce((acc, d) => acc + Number(d.recurrentes          || 0), 0);
+    // Aggregate by etapa
+    const byEtapa: Record<string, number> = { alta: 0, primera_consulta: 0, primer_pago: 0, recurrente: 0 };
+    for (const row of embudoData) {
+      const total = Number(row.nuevos || 0) + Number(row.reactivados_dormidos || 0) + Number(row.resucitados || 0);
+      if (byEtapa[row.etapa] !== undefined) {
+        byEtapa[row.etapa] += total;
+      }
+    }
 
-    const pctConsulta    = totalClientes > 0 ? (totalConsulta    / totalClientes) * 100 : 0;
-    const pctPago        = totalClientes > 0 ? (totalPago        / totalClientes) * 100 : 0;
-    const pctRecurrente  = totalClientes > 0 ? (totalRecurrentes / totalClientes) * 100 : 0;
+    const totalAltas = byEtapa.alta || 0;
+    const totalConsulta = byEtapa.primera_consulta || 0;
+    const totalPago = byEtapa.primer_pago || 0;
+    const totalRecurrentes = byEtapa.recurrente || 0;
 
-    const revenueTotal         = canalesData.reduce((acc, d) => acc + Number(d.revenue_total   || 0), 0);
-    const totalClientesCanales = canalesData.reduce((acc, d) => acc + Number(d.total_clientes  || 0), 0);
-    const revenuePorCliente    = totalClientesCanales > 0 ? revenueTotal / totalClientesCanales : 0;
+    const pctConsulta = totalAltas > 0 ? (totalConsulta / totalAltas) * 100 : 0;
+    const pctPago = totalAltas > 0 ? (totalPago / totalAltas) * 100 : 0;
+    const pctRecurrente = totalAltas > 0 ? (totalRecurrentes / totalAltas) * 100 : 0;
 
-    return { totalClientes: totalClientes || totalClientesCanales, pctConsulta, totalConsulta, pctPago, totalPago, revenueTotal, revenuePorCliente, totalRecurrentes, pctRecurrente };
+    const revenueTotal = canalesData.reduce((acc, d) => acc + Number(d.revenue_total || 0), 0);
+    const totalClientesCanales = canalesData.reduce((acc, d) => acc + Number(d.total_clientes || 0), 0);
+    const revenuePorCliente = totalClientesCanales > 0 ? revenueTotal / totalClientesCanales : 0;
+
+    return {
+      totalClientes: totalAltas || totalClientesCanales,
+      pctConsulta, totalConsulta,
+      pctPago, totalPago,
+      revenueTotal, revenuePorCliente,
+      totalRecurrentes, pctRecurrente,
+    };
   }, [embudoData, canalesData]);
 
   if (isLoading) return <KPIGridSkeleton count={6} />;
@@ -107,13 +122,13 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
       <KPICard
         title="Clientes Registrados"
         value={formatNumber(kpis.totalClientes)}
-        subtitle="Total dados de alta en todos los canales"
+        subtitle="Total dados de alta en el período"
         icon={<Users className="w-4 h-4 text-slate-500" />}
         gradientFrom="from-slate-400" gradientTo="to-slate-600"
         valueColor="text-slate-700"
         tooltip={{
           title: "¿Qué cuenta?",
-          content: "Total de clientes dados de alta en SIAP, de todos los canales y períodos.",
+          content: "Total de clientes dados de alta (etapa 'alta') en el período seleccionado.",
           footer: "📊 Vista: dashboard.comercial_embudo"
         }}
       />
@@ -126,7 +141,7 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
         valueColor={consultaColor}
         tooltip={{
           title: "¿Cómo se calcula?",
-          content: "% de clientes registrados que tuvieron al menos 1 turno asistido.\nFórmula: con_primera_consulta / clientes_nuevos × 100",
+          content: "% de clientes que tuvieron al menos 1 turno asistido (incluye nuevos, reactivados y resucitados).\nFórmula: primera_consulta / alta × 100",
           footer: "📊 Vista: dashboard.comercial_embudo"
         }}
       />
@@ -139,7 +154,7 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
         valueColor={pagoColor}
         tooltip={{
           title: "¿Cómo se calcula?",
-          content: "% de clientes que tuvieron al menos 1 turno asistido con monto > 0.\nFórmula: con_primer_pago / clientes_nuevos × 100",
+          content: "% de clientes que tuvieron al menos 1 turno asistido con monto > $0. No se cuentan cortesías ni turnos gratuitos.\nFórmula: primer_pago / alta × 100",
           footer: "📊 Vista: dashboard.comercial_embudo"
         }}
       />
@@ -172,13 +187,13 @@ export const ComercialKPIs = ({ embudoData, canalesData, isLoading }: ComercialK
       <KPICard
         title="Son Recurrentes (3+ turnos)"
         value={`${formatNumber(kpis.totalRecurrentes)} (${formatPercent(kpis.pctRecurrente)})`}
-        subtitle="Clientes que volvieron 3 o más veces"
+        subtitle="Clientes que alcanzaron 3+ asistencias"
         icon={<RefreshCw className="w-4 h-4 text-purple-500" />}
         gradientFrom={gRecurrente.from} gradientTo={gRecurrente.to}
         valueColor={recurrenteColor}
         tooltip={{
           title: "¿Qué es recurrente?",
-          content: "Clientes que volvieron 3 o más veces (3+ turnos asistidos). Es el indicador más fuerte de fidelización.",
+          content: "Clientes que alcanzaron 3 o más asistencias históricas acumuladas durante el período. Indicador clave de fidelización.",
           footer: "📊 Vista: dashboard.comercial_embudo"
         }}
       />
