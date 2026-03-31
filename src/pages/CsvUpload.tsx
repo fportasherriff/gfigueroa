@@ -317,6 +317,7 @@ export default function CsvUpload() {
 
   const handleClearHistory = () => {
     setUploadHistory([]);
+    try { localStorage.removeItem('ghigi_upload_history'); } catch {}
     toast.info("Historial limpiado");
   };
 
