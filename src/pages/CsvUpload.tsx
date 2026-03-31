@@ -93,14 +93,12 @@ export default function CsvUpload() {
 
   const fetchMetaDates = useCallback(async () => {
     try {
-      const [resActualizacion, resNegocio] = await Promise.all([
-        supabase.rpc('execute_select', {
-          query: "SELECT MAX(_loaded_at) AS ultima_actualizacion FROM raw.agenda_detallada"
-        }),
-        supabase.rpc('execute_select', {
-          query: "SELECT MAX(fecha_turno::date) AS ultima_fecha_negocio FROM dashboard.finanzas_diario WHERE fecha_turno <= NOW()"
-        }),
-      ]);
+      const { data: result, error } = await supabase.rpc('execute_select', {
+        query: `SELECT MAX(_loaded_at) AS ultima_carga, MAX(CASE WHEN "Fecha de carga"::timestamp <= NOW() THEN "Fecha de carga"::timestamp END) AS ultima_fecha_negocio FROM raw.agenda_detallada`
+      });
+
+      if (error || !Array.isArray(result) || result.length === 0) return;
+      const row = result[0] as Record<string, unknown>;
 
       if (!resActualizacion.error && resActualizacion.data?.[0]?.ultima_actualizacion) {
         const d = new Date(resActualizacion.data[0].ultima_actualizacion);
