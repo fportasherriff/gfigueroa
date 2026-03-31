@@ -100,16 +100,16 @@ export default function CsvUpload() {
       if (error || !Array.isArray(result) || result.length === 0) return;
       const row = result[0] as Record<string, unknown>;
 
-      if (!resActualizacion.error && resActualizacion.data?.[0]?.ultima_actualizacion) {
-        const d = new Date(resActualizacion.data[0].ultima_actualizacion);
+      if (row.ultima_carga) {
+        const d = new Date(String(row.ultima_carga));
         setUltimaActualizacion(
           d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
           ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'
         );
       }
 
-      if (!resNegocio.error && resNegocio.data?.[0]?.ultima_fecha_negocio) {
-        const d = new Date(resNegocio.data[0].ultima_fecha_negocio + 'T12:00:00');
+      if (row.ultima_fecha_negocio) {
+        const d = new Date(String(row.ultima_fecha_negocio));
         setUltimaFechaNegocio(
           d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         );
