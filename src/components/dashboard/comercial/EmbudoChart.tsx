@@ -13,36 +13,39 @@ interface EmbudoChartProps {
 
 const ETAPA_ORDER = ['alta', 'primera_consulta', 'primer_pago', 'recurrente'] as const;
 
-const ETAPA_CONFIG: Record<string, { label: string; tooltip: string }> = {
+const ETAPA_CONFIG: Record<string, { label: string; tooltip: string; description: string }> = {
   alta: {
     label: 'Alta',
     tooltip: 'Clientes dados de alta en el período seleccionado.',
+    description: 'Clientes dados de alta en el período seleccionado.',
   },
   primera_consulta: {
     label: 'Primera Consulta',
-    tooltip: 'Primera vez que el cliente asistió en toda su historia. Incluye: Nuevos (alta en el período), Reactivados dormidos (alta previa, primera visita ahora), Resucitados (ya habían venido pero hace más de 12 meses).',
+    tooltip: 'Primera visita histórica que ocurrió en el período. Puede superar las Altas porque incluye clientes con alta previa que vinieron por primera vez, y resucitados (vuelven tras +12 meses sin visita).',
+    description: 'Primera visita histórica que ocurrió en el período. Puede superar las Altas porque incluye clientes con alta previa que vinieron por primera vez, y resucitados (vuelven tras +12 meses sin visita).',
   },
   primer_pago: {
     label: 'Primer Pago',
-    tooltip: 'Primer turno asistido con monto > $0 en toda la historia del cliente. No se cuentan cortesías ni turnos gratuitos (monto = $0).',
+    tooltip: 'Primera vez que el cliente pagó en toda su historia — no se cuentan cortesías ni turnos gratuitos (monto = $0).',
+    description: 'Primera vez que el cliente pagó en toda su historia — no se cuentan cortesías ni turnos gratuitos (monto = $0).',
   },
   recurrente: {
     label: 'Recurrente (3+ turnos)',
-    tooltip: 'Clientes que alcanzaron 3 o más asistencias históricas acumuladas durante el período.',
+    tooltip: 'Clientes que alcanzaron 3 o más asistencias acumuladas durante el período.',
+    description: 'Clientes que alcanzaron 3 o más asistencias acumuladas durante el período.',
   },
 };
 
 const SEGMENT_COLORS = {
-  nuevos: { bg: 'bg-blue-500', text: 'text-blue-600', label: 'Nuevos' },
-  reactivados_dormidos: { bg: 'bg-orange-500', text: 'text-orange-600', label: 'Reactivados dormidos' },
-  resucitados: { bg: 'bg-green-500', text: 'text-green-600', label: 'Resucitados' },
+  nuevos: { bg: 'bg-blue-500', label: 'Nuevos' },
+  reactivados_dormidos: { bg: 'bg-orange-500', label: 'Reactivados dormidos' },
+  resucitados: { bg: 'bg-green-500', label: 'Resucitados' },
 };
 
 export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
   const stages = useMemo(() => {
     if (!data.length) return null;
 
-    // Aggregate by etapa across all rows
     const agg: Record<string, { nuevos: number; reactivados_dormidos: number; resucitados: number }> = {};
     for (const etapa of ETAPA_ORDER) {
       agg[etapa] = { nuevos: 0, reactivados_dormidos: 0, resucitados: 0 };
@@ -92,7 +95,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
           <div>
             <CardTitle className="text-lg">Activación de Clientes</CardTitle>
             <CardDescription>
-              Recorrido desde el alta hasta la recurrencia — desglosado por tipo de cliente.
+              Recorrido desde el alta hasta la recurrencia, desglosado por tipo de cliente.
             </CardDescription>
           </div>
           <TooltipProvider>
@@ -112,9 +115,6 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
                   <li><span className="font-medium text-orange-600">Reactivados</span>: alta previa, primera visita ahora</li>
                   <li><span className="font-medium text-green-600">Resucitados</span>: volvieron después de 12+ meses</li>
                 </ul>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Los clientes "Activos" (última visita &lt; 12 meses) no aparecen — el funnel mide conversión y reactivación, no retención.
-                </p>
                 <p className="text-xs text-blue-600 mt-2 font-mono">
                   📊 Vista: dashboard.comercial_embudo
                 </p>
@@ -123,7 +123,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
           </TooltipProvider>
         </div>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-6">
         {stages.map((stage) => {
           const barWidth = maxTotal > 0 ? Math.max((stage.total / maxTotal) * 100, 8) : 8;
           const nuevoPct = stage.total > 0 ? (stage.nuevos / stage.total) * 100 : 0;
@@ -201,6 +201,11 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
                   <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{formatNumber(stage.resucitados)} resucitados</span>
                 )}
               </div>
+
+              {/* Description text */}
+              <p className="text-xs text-muted-foreground pl-1 italic">
+                {stage.description}
+              </p>
             </div>
           );
         })}
@@ -217,7 +222,7 @@ export const EmbudoChart = ({ data, isLoading }: EmbudoChartProps) => {
 
         <div className="p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
-            💡 Los clientes "Activos" (ya asistieron antes con última visita &lt; 12 meses) no aparecen en el funnel — este gráfico mide conversión y reactivación, no retención.
+            💡 Los clientes "Activos" (ya asistieron antes con última visita reciente) no aparecen en este funnel — el funnel mide conversión y reactivación, no retención.
           </p>
         </div>
       </CardContent>
