@@ -136,14 +136,20 @@ export default function CsvUpload() {
     };
   }, [csvFiles]);
 
+  const persistHistory = useCallback((entries: UploadHistoryEntry[]) => {
+    const trimmed = entries.slice(0, 20);
+    try { localStorage.setItem('ghigi_upload_history', JSON.stringify(trimmed)); } catch {}
+    return trimmed;
+  }, []);
+
   const addToHistory = useCallback((entry: Omit<UploadHistoryEntry, "id" | "timestamp">) => {
     const newEntry: UploadHistoryEntry = {
       ...entry,
       id: crypto.randomUUID(),
       timestamp: new Date(),
     };
-    setUploadHistory((prev) => [newEntry, ...prev]);
-  }, []);
+    setUploadHistory((prev) => persistHistory([newEntry, ...prev]));
+  }, [persistHistory]);
 
   const handleFileUpload = useCallback(
     async (fileId: string, file: File): Promise<boolean> => {
