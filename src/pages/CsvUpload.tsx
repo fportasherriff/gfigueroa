@@ -73,7 +73,14 @@ const initialCsvFiles: CsvFile[] = [
 export default function CsvUpload() {
   const [csvFiles, setCsvFiles] = useState<CsvFile[]>(initialCsvFiles);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>([]);
+  const [uploadHistory, setUploadHistory] = useState<UploadHistoryEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('ghigi_upload_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{
     current: number;
@@ -86,25 +93,23 @@ export default function CsvUpload() {
 
   const fetchMetaDates = useCallback(async () => {
     try {
-      const [resActualizacion, resNegocio] = await Promise.all([
-        supabase.rpc('execute_select', {
-          query: "SELECT MAX(_loaded_at) AS ultima_actualizacion FROM raw.agenda_detallada"
-        }),
-        supabase.rpc('execute_select', {
-          query: "SELECT MAX(fecha_turno::date) AS ultima_fecha_negocio FROM dashboard.finanzas_diario WHERE fecha_turno <= NOW()"
-        }),
-      ]);
+      const { data: result, error } = await supabase.rpc('execute_select', {
+        query: `SELECT MAX(_loaded_at) AS ultima_carga, MAX(CASE WHEN "Fecha de carga"::timestamp <= NOW() THEN "Fecha de carga"::timestamp END) AS ultima_fecha_negocio FROM raw.agenda_detallada`
+      });
 
-      if (!resActualizacion.error && resActualizacion.data?.[0]?.ultima_actualizacion) {
-        const d = new Date(resActualizacion.data[0].ultima_actualizacion);
+      if (error || !Array.isArray(result) || result.length === 0) return;
+      const row = result[0] as Record<string, unknown>;
+
+      if (row.ultima_carga) {
+        const d = new Date(String(row.ultima_carga));
         setUltimaActualizacion(
           d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
           ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) + ' hs'
         );
       }
 
-      if (!resNegocio.error && resNegocio.data?.[0]?.ultima_fecha_negocio) {
-        const d = new Date(resNegocio.data[0].ultima_fecha_negocio + 'T12:00:00');
+      if (row.ultima_fecha_negocio) {
+        const d = new Date(String(row.ultima_fecha_negocio));
         setUltimaFechaNegocio(
           d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         );
@@ -131,14 +136,20 @@ export default function CsvUpload() {
     };
   }, [csvFiles]);
 
+  const persistHistory = useCallback((entries: UploadHistoryEntry[]) => {
+    const trimmed = entries.slice(0, 20);
+    try { localStorage.setItem('ghigi_upload_history', JSON.stringify(trimmed)); } catch {}
+    return trimmed;
+  }, []);
+
   const addToHistory = useCallback((entry: Omit<UploadHistoryEntry, "id" | "timestamp">) => {
     const newEntry: UploadHistoryEntry = {
       ...entry,
       id: crypto.randomUUID(),
       timestamp: new Date(),
     };
-    setUploadHistory((prev) => [newEntry, ...prev]);
-  }, []);
+    setUploadHistory((prev) => persistHistory([newEntry, ...prev]));
+  }, [persistHistory]);
 
   const handleFileUpload = useCallback(
     async (fileId: string, file: File): Promise<boolean> => {
@@ -306,6 +317,7 @@ export default function CsvUpload() {
 
   const handleClearHistory = () => {
     setUploadHistory([]);
+    try { localStorage.removeItem('ghigi_upload_history'); } catch {}
     toast.info("Historial limpiado");
   };
 
@@ -342,7 +354,7 @@ export default function CsvUpload() {
           : "Error al actualizar el dashboard",
         recordsProcessed: successCount,
       };
-      setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
+      setUploadHistory((prev) => persistHistory([dashboardHistoryEntry, ...prev]));
 
       // Refrescar fechas meta después del refresh exitoso
       await fetchMetaDates();
