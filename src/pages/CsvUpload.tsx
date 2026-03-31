@@ -354,7 +354,7 @@ export default function CsvUpload() {
           : "Error al actualizar el dashboard",
         recordsProcessed: successCount,
       };
-      setUploadHistory((prev) => [dashboardHistoryEntry, ...prev]);
+      setUploadHistory((prev) => persistHistory([dashboardHistoryEntry, ...prev]));
 
       // Refrescar fechas meta después del refresh exitoso
       await fetchMetaDates();
