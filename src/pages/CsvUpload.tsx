@@ -62,8 +62,8 @@ const initialCsvFiles: CsvFile[] = [
   },
   {
     id: "tratamientos_reporte",
-    name: "Reporte de Tratamientos",
-    description: "exportTratamientosReporte.csv",
+    name: "Listado de Tratamientos",
+    description: "Reporte de tratamientos activos, sesiones y saldos",
     lastUpdated: null,
     status: "idle",
     progress: 0,
